@@ -18,6 +18,9 @@ export function validateForm(form) {
   form.defects.forEach((defect) => {
     const defectErr = {}
     if (!defect.defectId) defectErr.defectId = 'Vui lòng chọn lỗi (defect)'
+    if (defect.defectId && defect.allowMinor && defect.allowMajor && !defect.severity) {
+      defectErr.severity = 'Vui lòng chọn mức độ lỗi (Major/Minor)'
+    }
 
     if (!defect.locations || defect.locations.length === 0) {
       defectErr.locationsGeneral = 'Cần thêm ít nhất 1 vị trí (location)'

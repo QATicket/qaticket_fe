@@ -13,7 +13,8 @@ export function toPayload(form) {
     garmentTypeId: form.garmentTypeId,
     status: form.status,
     defects: form.defects.map((defect) => ({
-      defectId: defect.defectId,
+      defectItemId: defect.defectId,
+      severity: defect.severity || null,
       note: defect.note || '',
       locations: defect.locations.map((loc) => ({
         garmentLocationId: loc.garmentLocationId || null,
@@ -43,7 +44,10 @@ export function fromResponse(ticket) {
     status: ticket.status,
     defects: (ticket.defects || []).map((defect) => ({
       _localId: newLocalId(),
-      defectId: defect.defect?.id ?? null,
+      defectId: defect.defectItem?.id ?? null,
+      allowMinor: false,
+      allowMajor: false,
+      severity: defect.severity || null,
       note: defect.note || '',
       locations: (defect.locations || []).map((loc) => ({
         _localId: newLocalId(),

@@ -9,5 +9,6 @@ export const getGarmentTypes = () => apiFetch('/api/master/garment-types')
 export const getGarmentLocations = (garmentTypeId) =>
   apiFetch('/api/master/garment-locations', { params: { garmentTypeId } })
 export const getDefects = () => apiFetch('/api/master/defects')
+export const getDefectItems = () => apiFetch('/api/master/defect-items')
 export const searchPurchaseOrders = (search) =>
   apiFetch('/api/purchase-orders', { params: { search } })

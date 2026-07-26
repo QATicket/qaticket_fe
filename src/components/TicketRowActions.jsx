@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-export default function TicketRowActions({ ticket, busy, onView, onEdit, onExportPdf, onDelete }) {
+export default function TicketRowActions({ ticket, busy, onView, onEdit, onExportPdf, onExportExcel, onDelete }) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef(null)
 
@@ -51,6 +51,14 @@ export default function TicketRowActions({ ticket, busy, onView, onEdit, onExpor
             className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
           >
             Xuất PDF
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => runAndClose(onExportExcel)}
+            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
+          >
+            Xuất Excel
           </button>
           {ticket.status === 'DRAFT' && (
             <button

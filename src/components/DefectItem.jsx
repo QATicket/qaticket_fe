@@ -5,12 +5,22 @@ import { emptyLocation } from '../utils/id'
 export default function DefectItem({
   defect,
   index,
-  defectOptions,
+  defectItemOptions,
   garmentLocationOptions,
   onChange,
   onRemove,
   error,
 }) {
+  function handleDefectChange(id) {
+    const item = defectItemOptions.find((o) => String(o.value) === String(id))
+    const allowMinor = item?.allowMinor ?? false
+    const allowMajor = item?.allowMajor ?? false
+    let severity = null
+    if (allowMinor && !allowMajor) severity = 'MINOR'
+    else if (allowMajor && !allowMinor) severity = 'MAJOR'
+    onChange({ defectId: id, allowMinor, allowMajor, severity })
+  }
+
   function updateLocation(localId, patch) {
     onChange({
       locations: defect.locations.map((loc) =>
@@ -43,13 +53,39 @@ export default function DefectItem({
       <div className="mb-3">
         <label className="block text-xs font-medium text-slate-500 mb-1">1. DEFECT (Lỗi)</label>
         <SearchableSelect
-          options={defectOptions}
+          options={defectItemOptions}
           value={defect.defectId}
-          onChange={(v) => onChange({ defectId: v })}
+          onChange={handleDefectChange}
           placeholder="Tìm và chọn lỗi"
           error={error?.defectId}
         />
       </div>
+
+      {defect.defectId && (defect.allowMinor || defect.allowMajor) && (
+        <div className="mb-3">
+          <label className="block text-xs font-medium text-slate-500 mb-1">
+            Mức độ lỗi (Severity)
+          </label>
+          {defect.allowMinor && defect.allowMajor ? (
+            <select
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange ${
+                error?.severity ? 'border-brand-red' : 'border-slate-300'
+              }`}
+              value={defect.severity || ''}
+              onChange={(e) => onChange({ severity: e.target.value || null })}
+            >
+              <option value="">-- Chọn mức độ --</option>
+              <option value="MAJOR">Major (Lỗi nặng)</option>
+              <option value="MINOR">Minor (Lỗi nhẹ)</option>
+            </select>
+          ) : (
+            <div className="w-full border border-slate-200 bg-slate-100 text-slate-600 rounded-md px-3 py-2 text-sm">
+              {defect.severity === 'MAJOR' ? 'Major (Lỗi nặng)' : 'Minor (Lỗi nhẹ)'}
+            </div>
+          )}
+          {error?.severity && <p className="text-xs text-brand-red mt-1">{error.severity}</p>}
+        </div>
+      )}
 
       <div className="mb-3">
         <label className="block text-xs font-medium text-slate-500 mb-1">Note</label>

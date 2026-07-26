@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { listQaTickets, deleteQaTicket } from '../api/qaTickets'
 import { getFactories } from '../api/master'
 import { exportTicketPdf } from '../utils/pdfExport'
+import { exportTicketsExcel } from '../utils/excelExport'
 import TicketRowActions from './TicketRowActions'
 import TicketDetailModal from './TicketDetailModal'
 
@@ -18,6 +19,7 @@ export default function TicketListPage({ onEdit }) {
   const [busyId, setBusyId] = useState(null)
   const [viewingTicketId, setViewingTicketId] = useState(null)
   const [pdfProgress, setPdfProgress] = useState('')
+  const [excelProgress, setExcelProgress] = useState('')
 
   useEffect(() => {
     getFactories()
@@ -78,6 +80,25 @@ export default function TicketListPage({ onEdit }) {
     }
   }
 
+  async function handleExportExcel(ticket) {
+    setBusyId(ticket.id)
+    setExcelProgress('Đang chuẩn bị...')
+    setError('')
+    try {
+      const { overflow } = await exportTicketsExcel(ticket.id, { onProgress: setExcelProgress })
+      if (overflow.length > 0) {
+        setError(
+          `Đã xuất file nhưng ${overflow.length} loại lỗi bị bỏ qua do vượt quá số dòng cho phép trong bảng lỗi`
+        )
+      }
+    } catch (err) {
+      setError(err.message || 'Xuất Excel thất bại')
+    } finally {
+      setBusyId(null)
+      setExcelProgress('')
+    }
+  }
+
   return (
     <div className="min-h-screen py-6 px-3 sm:px-6">
       <div className="max-w-6xl mx-auto">
@@ -120,6 +141,12 @@ export default function TicketListPage({ onEdit }) {
         {pdfProgress && (
           <div className="bg-sky-50 border border-sky-200 text-sky-700 text-sm rounded-md p-3 mb-4">
             {pdfProgress}
+          </div>
+        )}
+
+        {excelProgress && (
+          <div className="bg-sky-50 border border-sky-200 text-sky-700 text-sm rounded-md p-3 mb-4">
+            {excelProgress}
           </div>
         )}
 
@@ -172,6 +199,7 @@ export default function TicketListPage({ onEdit }) {
                       onView={() => setViewingTicketId(t.id)}
                       onEdit={() => onEdit(t.id)}
                       onExportPdf={() => handleExportPdf(t)}
+                      onExportExcel={() => handleExportExcel(t)}
                       onDelete={() => handleDelete(t.id)}
                     />
                   </td>

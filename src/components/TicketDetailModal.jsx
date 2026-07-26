@@ -93,7 +93,29 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                     key={defect.id}
                     className="bg-slate-50 border-l-4 border-brand-red rounded-md p-3"
                   >
-                    <p className="text-sm font-medium text-slate-700">{defect.defect?.name}</p>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div>
+                        <p className="text-sm font-medium text-slate-700">
+                          {defect.defectItem?.name || defect.defect?.name}
+                        </p>
+                        {defect.defectItem?.name &&
+                          defect.defect?.name &&
+                          defect.defectItem.name !== defect.defect.name && (
+                            <p className="text-xs text-slate-400">{defect.defect.name}</p>
+                          )}
+                      </div>
+                      {defect.severity && (
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                            defect.severity === 'MAJOR'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-amber-100 text-amber-700'
+                          }`}
+                        >
+                          {defect.severity === 'MAJOR' ? 'Major' : 'Minor'}
+                        </span>
+                      )}
+                    </div>
                     {defect.note && (
                       <p className="text-xs text-slate-500 mt-1">Ghi chú: {defect.note}</p>
                     )}

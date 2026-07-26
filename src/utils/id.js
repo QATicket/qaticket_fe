@@ -16,6 +16,9 @@ export function emptyDefect() {
   return {
     _localId: newLocalId(),
     defectId: null,
+    allowMinor: false,
+    allowMajor: false,
+    severity: null,
     note: '',
     locations: [emptyLocation()],
   }

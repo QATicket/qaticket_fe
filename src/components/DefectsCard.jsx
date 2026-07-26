@@ -3,7 +3,7 @@ import { emptyDefect } from '../utils/id'
 
 export default function DefectsCard({
   defects,
-  defectOptions,
+  defectItemOptions,
   garmentLocationOptions,
   onChange,
   errors,
@@ -50,7 +50,7 @@ export default function DefectsCard({
             key={defect._localId}
             defect={defect}
             index={index}
-            defectOptions={defectOptions}
+            defectItemOptions={defectItemOptions}
             garmentLocationOptions={garmentLocationOptions}
             onChange={(patch) => updateDefect(defect._localId, patch)}
             onRemove={() => removeDefect(defect._localId)}

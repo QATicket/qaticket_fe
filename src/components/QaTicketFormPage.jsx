@@ -10,7 +10,7 @@ import {
   getCustomers,
   getGarmentTypes,
   getGarmentLocations,
-  getDefects,
+  getDefectItems,
 } from '../api/master'
 import { createQaTicket, updateQaTicket, getQaTicket } from '../api/qaTickets'
 import { emptyFormState } from '../utils/id'
@@ -40,7 +40,7 @@ export default function QaTicketFormPage({ userInfo, ticketId }) {
   const [customerOptions, setCustomerOptions] = useState([])
   const [garmentTypeOptions, setGarmentTypeOptions] = useState([])
   const [garmentLocationOptions, setGarmentLocationOptions] = useState([])
-  const [defectOptions, setDefectOptions] = useState([])
+  const [defectItemOptions, setDefectItemOptions] = useState([])
 
   const [showDraftBanner, setShowDraftBanner] = useState(false)
   const draftRef = useRef(null)
@@ -53,8 +53,17 @@ export default function QaTicketFormPage({ userInfo, ticketId }) {
     getFactories().then((list) => setFactoryOptions(toOptions(list))).catch(() => {})
     getCustomers().then((list) => setCustomerOptions(toOptions(list))).catch(() => {})
     getGarmentTypes().then((list) => setGarmentTypeOptions(toOptions(list))).catch(() => {})
-    getDefects()
-      .then((list) => setDefectOptions(list.map((d) => ({ value: d.id, label: d.nameVi }))))
+    getDefectItems()
+      .then((list) =>
+        setDefectItemOptions(
+          list.map((d) => ({
+            value: d.id,
+            label: d.nameVi,
+            allowMinor: d.allowMinor,
+            allowMajor: d.allowMajor,
+          })),
+        ),
+      )
       .catch(() => {})
   }, [])
 
@@ -74,6 +83,22 @@ export default function QaTicketFormPage({ userInfo, ticketId }) {
       }
     }
   }, [editingId])
+
+  // Ticket cũ (edit mode) chỉ trả defectItem.id + severity, không có allowMinor/allowMajor
+  // -> đối chiếu lại với danh mục defect-item khi cả hai đã load xong để DefectItem biết
+  // có cần hiện lựa chọn Major/Minor hay không.
+  useEffect(() => {
+    if (!editingId || defectItemOptions.length === 0) return
+    setForm((prev) => ({
+      ...prev,
+      defects: prev.defects.map((d) => {
+        const item = defectItemOptions.find((o) => String(o.value) === String(d.defectId))
+        if (!item) return d
+        return { ...d, allowMinor: item.allowMinor, allowMajor: item.allowMajor }
+      }),
+    }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defectItemOptions, editingId, form.id])
 
   // Cascade: Factory -> Line
   useEffect(() => {
@@ -199,7 +224,7 @@ export default function QaTicketFormPage({ userInfo, ticketId }) {
 
           <DefectsCard
             defects={form.defects}
-            defectOptions={defectOptions}
+            defectItemOptions={defectItemOptions}
             garmentLocationOptions={garmentLocationOptions}
             onChange={(defects) => patchForm({ defects })}
             errors={errors}

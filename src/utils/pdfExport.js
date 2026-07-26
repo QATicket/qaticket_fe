@@ -148,7 +148,13 @@ export async function exportTicketPdf(ticketId, { onProgress } = {}) {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(10.5)
     doc.setTextColor(30)
-    doc.text(`${di + 1}. ${defect.defect?.name || 'Lỗi'}`, PAGE_MARGIN + 2, L.y)
+    const defectName = defect.defectItem?.name || defect.defect?.name || 'Lỗi'
+    const severityLabel = defect.severity === 'MAJOR' ? 'Major' : defect.severity === 'MINOR' ? 'Minor' : ''
+    doc.text(
+      `${di + 1}. ${defectName}${severityLabel ? ` [${severityLabel}]` : ''}`,
+      PAGE_MARGIN + 2,
+      L.y,
+    )
     L.y += 6.5
 
     if (defect.note) {
