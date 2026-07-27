@@ -44,7 +44,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                 type="button"
                 onClick={handleExportPdf}
                 disabled={!!pdfProgress}
-                className="text-sm border border-brand-red text-brand-red rounded-md px-3 py-1.5 hover:bg-red-50 disabled:opacity-50"
+                className="text-sm border border-brand-navy text-brand-navy rounded-md px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50"
               >
                 {pdfProgress ? 'Đang xuất...' : '⭳ Xuất PDF'}
               </button>

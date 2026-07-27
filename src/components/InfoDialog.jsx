@@ -12,7 +12,7 @@ export default function InfoDialog({ message, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="bg-brand-red text-white font-semibold rounded-md px-6 py-2 hover:opacity-90"
+          className="bg-brand-navy text-white font-semibold rounded-md px-6 py-2 hover:opacity-90"
         >
           OK
         </button>

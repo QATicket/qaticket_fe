@@ -68,7 +68,7 @@ export default function DefectItem({
           </label>
           {defect.allowMinor && defect.allowMajor ? (
             <select
-              className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange ${
+              className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy ${
                 error?.severity ? 'border-brand-red' : 'border-slate-300'
               }`}
               value={defect.severity || ''}
@@ -90,7 +90,7 @@ export default function DefectItem({
       <div className="mb-3">
         <label className="block text-xs font-medium text-slate-500 mb-1">Note</label>
         <textarea
-          className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"
+          className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy"
           rows={2}
           placeholder="Ghi chú lỗi (optional)"
           value={defect.note}

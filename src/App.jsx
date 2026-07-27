@@ -3,6 +3,7 @@ import LoginPage from './components/LoginPage'
 import QaTicketFormPage from './components/QaTicketFormPage'
 import TicketListPage from './components/TicketListPage'
 import Sidebar from './components/Sidebar'
+import WorkshopWatermark from './components/WorkshopWatermark'
 import { tokenStorage, warmUpBackend } from './api/http'
 import { logout } from './api/auth'
 
@@ -50,7 +51,11 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-brand-navy to-brand-navyDark">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <WorkshopWatermark />
+      </div>
+
       <Sidebar
         view={view}
         onNavigate={handleNavigate}
@@ -60,7 +65,7 @@ export default function App() {
         onToggleCollapsed={toggleCollapsed}
       />
       <div
-        className={`pt-14 sm:pt-0 transition-all duration-200 ${collapsed ? 'sm:ml-0' : 'sm:ml-64'}`}
+        className={`relative pt-14 sm:pt-0 transition-all duration-200 ${collapsed ? 'sm:ml-0' : 'sm:ml-64'}`}
       >
         {view === 'form' ? (
           <QaTicketFormPage
@@ -70,6 +75,7 @@ export default function App() {
           />
         ) : (
           <TicketListPage
+            userInfo={userInfo}
             onEdit={(id) => {
               setEditingTicketId(id)
               setView('form')

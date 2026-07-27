@@ -197,7 +197,7 @@ export default function QaTicketFormPage({ userInfo, ticketId }) {
   }
 
   if (loadingTicket) {
-    return <div className="p-8 text-center text-slate-500">Đang tải phiếu...</div>
+    return <div className="p-8 text-center text-slate-300">Đang tải phiếu...</div>
   }
 
   return (
@@ -235,7 +235,7 @@ export default function QaTicketFormPage({ userInfo, ticketId }) {
               type="button"
               onClick={() => handleSave('SUBMITTED')}
               disabled={saving}
-              className="bg-white border-2 border-brand-red text-brand-red font-semibold rounded-md px-6 py-2.5 hover:bg-red-50 disabled:opacity-60"
+              className="bg-white border-2 border-brand-navy text-brand-navy font-semibold rounded-md px-6 py-2.5 hover:bg-slate-50 disabled:opacity-60"
             >
               Nộp phiếu
             </button>
@@ -243,7 +243,7 @@ export default function QaTicketFormPage({ userInfo, ticketId }) {
               type="button"
               onClick={() => handleSave('DRAFT')}
               disabled={saving}
-              className="bg-brand-red text-white font-semibold rounded-md px-6 py-2.5 hover:opacity-90 disabled:opacity-60"
+              className="bg-brand-navy text-white font-semibold rounded-md px-6 py-2.5 hover:opacity-90 disabled:opacity-60"
             >
               {saving ? 'Đang lưu...' : 'Lưu Phiếu QA'}
             </button>

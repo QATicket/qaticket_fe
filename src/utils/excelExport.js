@@ -7,7 +7,6 @@ const TEMPLATE_URL = '/templates/BB_PREFINAL_FINAL_template.xlsx'
 const SHEET_NAME = 'Main Report (2)'
 const FIRST_DEFECT_ROW = 27
 const LAST_DEFECT_ROW = 89
-const HEADER_ROW = 26
 const LABEL_COL = 1 // A (merge A:F)
 const LABEL_END_COL = 6 // F
 const MAJOR_COL = 8 // H
@@ -16,26 +15,52 @@ const REMARK_COL = 10 // J (merge J:M)
 const REMARK_END_COL = 13 // M
 const TOTAL_COLS = 13 // A..M
 
-// Gộp theo (defectItem.id + severity): BE giờ đã trả severity thật cho từng
-// defect (xem src/CLAUDE.md) - cùng 1 defect item nhưng được ghi nhận khác
+const CATEGORY_FONT_SIZE = 13
+const ITEM_FONT_SIZE = 11
+
+// Sheet "Picture Major/Minor Defects" trong template: lưới 4x4 = 16 khung ảnh,
+// mỗi khung là 1 vùng merge 8 dòng x 5 cột, ngay dưới có nhãn "Defect:" và 1 ô
+// merge kế bên để ghi tên lỗi (xem cấu trúc merge thật trong file mẫu).
+const PICTURE_SHEET_MAJOR = 'Picture Major Defects '
+const PICTURE_SHEET_MINOR = 'Picture Minor Defects'
+const PICTURE_BOX_ROW_STARTS = [4, 13, 22, 31]
+const PICTURE_BOX_COL_STARTS = [1, 6, 11, 16]
+const PICTURE_BOX_ROW_SPAN = 8
+const PICTURE_BOX_COL_SPAN = 5
+const PICTURE_LABEL_ROW_OFFSET = 8
+const PICTURE_BOX_FIT_RATIO = 0.92 // chừa lề nhỏ quanh ảnh trong khung
+const IMAGE_EXT_BY_MIME = { 'image/jpeg': 'jpeg', 'image/png': 'png', 'image/gif': 'gif' }
+
+// Gộp 2 cấp: defect (nhóm lỗi lớn, vd "1. FABRIC DEFECTS/LỖI VẢI") -> defectItem
+// (lỗi cụ thể trong nhóm đó, vd "Đứt chỉ"). Trong cùng 1 nhóm, các defectItem
+// trùng (id + severity) được cộng dồn số lượng - BE trả severity thật cho
+// từng defect (xem src/CLAUDE.md); cùng 1 defect item nhưng ghi nhận khác
 // mức độ (item cho phép cả Major/Minor) sẽ tách thành 2 dòng riêng.
 function aggregateDefects(tickets) {
-  const agg = new Map()
+  const categories = new Map()
   for (const ticket of tickets) {
     for (const d of ticket.defects || []) {
+      const categoryId = d.defect?.id ?? d.defectItem?.id ?? 'unknown'
+      const categoryName = d.defect?.name || d.defectItem?.name || 'Khác'
       const itemId = d.defectItem?.id ?? d.defect.id
-      const name = d.defectItem?.name || d.defect.name
+      const itemName = d.defectItem?.name || d.defect.name
       const severity = d.severity === 'MAJOR' ? 'MAJOR' : 'MINOR'
-      const key = `${itemId}:${severity}`
+      const itemKey = `${itemId}:${severity}`
       const qty = (d.locations || []).reduce((sum, loc) => sum + (loc.quantity || 0), 0)
 
-      if (!agg.has(key)) agg.set(key, { name, severity, qty: 0, notes: [] })
-      const entry = agg.get(key)
+      if (!categories.has(categoryId)) {
+        categories.set(categoryId, { name: categoryName, items: new Map() })
+      }
+      const category = categories.get(categoryId)
+      if (!category.items.has(itemKey)) {
+        category.items.set(itemKey, { name: itemName, severity, qty: 0, notes: [] })
+      }
+      const entry = category.items.get(itemKey)
       entry.qty += qty
       if (d.note) entry.notes.push(d.note)
     }
   }
-  return agg
+  return categories
 }
 
 function unmergeDefectRange(ws) {
@@ -46,45 +71,214 @@ function unmergeDefectRange(ws) {
   toUnmerge.forEach((range) => ws.unMergeCells(range))
 }
 
-function clearOldDefectRows(ws) {
+function styleRow(ws, row, colStyles) {
+  for (let col = 1; col <= TOTAL_COLS; col++) {
+    ws.getCell(row, col).style = { ...colStyles[col] }
+  }
+}
+
+// Xoá toàn bộ nội dung CŨ của vùng lỗi và ép mọi dòng về 1 kiểu nền/viền
+// trung tính duy nhất (lấy từ 1 dòng lỗi thường trong template gốc) trước
+// khi ghi dữ liệu động. Nếu không làm bước này, các dòng KHÔNG được ghi lại
+// (vd phần dư ở cuối bảng khi số lỗi ít hơn 63 dòng) vẫn giữ nguyên định
+// dạng tô xám/viền dày của các dòng "nhóm lỗi" cũ nằm rải rác trong template
+// -> nhìn lởm chởm, dư ra từng khúc không đồng nhất với phần vừa in.
+function resetDefectRows(ws) {
+  // PHẢI đọc style mẫu TRƯỚC khi unmerge: exceljs reset style của các ô
+  // không phải master (B..F, K..M) về mặc định rỗng ngay khi unmerge, nên
+  // nếu đọc sau đó sẽ chỉ lấy được style rỗng -> viền các cột này biến mất
+  // (chỗ có viền đen ở cột A, chỗ mất hẳn viền/thành "trắng" ở B..F, K..M).
+  const categoryStyle = {}
+  const itemStyle = {}
+  for (let col = 1; col <= TOTAL_COLS; col++) {
+    categoryStyle[col] = { ...ws.getCell(FIRST_DEFECT_ROW, col).style }
+    itemStyle[col] = { ...ws.getCell(FIRST_DEFECT_ROW + 1, col).style }
+  }
+  categoryStyle[LABEL_COL] = {
+    ...categoryStyle[LABEL_COL],
+    font: { ...categoryStyle[LABEL_COL].font, size: CATEGORY_FONT_SIZE, bold: true },
+  }
+  itemStyle[LABEL_COL] = {
+    ...itemStyle[LABEL_COL],
+    font: { ...itemStyle[LABEL_COL].font, size: ITEM_FONT_SIZE, bold: false },
+  }
+
   unmergeDefectRange(ws)
+
   for (let row = FIRST_DEFECT_ROW; row <= LAST_DEFECT_ROW; row++) {
+    styleRow(ws, row, itemStyle)
     for (let col = 1; col <= TOTAL_COLS; col++) {
       ws.getCell(row, col).value = null
     }
   }
+
+  return { categoryStyle, itemStyle }
 }
 
-function writeDefectRows(ws, aggregated) {
-  const templateStyles = {}
-  for (let col = 1; col <= TOTAL_COLS; col++) {
-    templateStyles[col] = { ...ws.getCell(HEADER_ROW, col).style }
-  }
+function writeDefectRows(ws, categories) {
+  const { categoryStyle, itemStyle } = resetDefectRows(ws)
 
   let row = FIRST_DEFECT_ROW
   const overflow = []
-  for (const data of aggregated.values()) {
-    if (row > LAST_DEFECT_ROW) {
-      overflow.push(data.name)
+
+  for (const category of categories.values()) {
+    const items = Array.from(category.items.values())
+    const rowsNeeded = 1 + items.length
+
+    if (row + rowsNeeded - 1 > LAST_DEFECT_ROW) {
+      overflow.push(category.name, ...items.map((item) => item.name))
       continue
     }
 
     ws.mergeCells(row, LABEL_COL, row, LABEL_END_COL)
-    ws.getCell(row, LABEL_COL).value = data.name
-    ws.getCell(row, data.severity === 'MAJOR' ? MAJOR_COL : MINOR_COL).value = data.qty
-
-    ws.mergeCells(row, REMARK_COL, row, REMARK_END_COL)
-    const remark = data.notes.join('; ')
-    if (remark) ws.getCell(row, REMARK_COL).value = remark
-
-    for (let col = 1; col <= TOTAL_COLS; col++) {
-      ws.getCell(row, col).style = templateStyles[col]
-    }
-
+    ws.getCell(row, LABEL_COL).value = category.name
+    styleRow(ws, row, categoryStyle)
     row += 1
+
+    for (const item of items) {
+      ws.mergeCells(row, LABEL_COL, row, LABEL_END_COL)
+      ws.getCell(row, LABEL_COL).value = item.name
+      ws.getCell(row, item.severity === 'MAJOR' ? MAJOR_COL : MINOR_COL).value = item.qty
+
+      ws.mergeCells(row, REMARK_COL, row, REMARK_END_COL)
+      const remark = item.notes.join('; ')
+      if (remark) ws.getCell(row, REMARK_COL).value = remark
+
+      styleRow(ws, row, itemStyle)
+      row += 1
+    }
   }
 
   return { lastRow: row - 1, overflow }
+}
+
+// Lấy list ảnh theo severity (Major/Minor), gắn kèm tên lỗi (defectItem, hoặc
+// defect nếu không có defectItem) để ghi vào ô "Defect:" cạnh mỗi khung ảnh.
+function collectDefectImages(tickets, severity) {
+  const entries = []
+  for (const ticket of tickets) {
+    for (const d of ticket.defects || []) {
+      const defectSeverity = d.severity === 'MAJOR' ? 'MAJOR' : 'MINOR'
+      if (defectSeverity !== severity) continue
+      const name = d.defectItem?.name || d.defect?.name || 'Khác'
+      for (const loc of d.locations || []) {
+        for (const img of loc.images || []) {
+          if (img.imageUrl) entries.push({ name, imageUrl: img.imageUrl })
+        }
+      }
+    }
+  }
+  return entries
+}
+
+function getPictureSlots() {
+  const slots = []
+  for (const boxRow of PICTURE_BOX_ROW_STARTS) {
+    for (const boxCol of PICTURE_BOX_COL_STARTS) {
+      slots.push({ boxRow, boxCol, labelRow: boxRow + PICTURE_LABEL_ROW_OFFSET, labelCol: boxCol + 1 })
+    }
+  }
+  return slots
+}
+
+// "no-store" bắt buộc gọi mạng lại thay vì dùng cache "opaque" trình duyệt có
+// thể đã lưu từ lần load ảnh trước qua thẻ <img> (no-cors) - xem pdfExport.js.
+async function loadImageForExcel(url) {
+  const res = await fetch(url, { cache: 'no-store' })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const blob = await res.blob()
+  const buffer = await blob.arrayBuffer()
+  const objectUrl = URL.createObjectURL(blob)
+  try {
+    const { width, height } = await new Promise((resolve, reject) => {
+      const el = new Image()
+      el.onload = () => resolve({ width: el.naturalWidth, height: el.naturalHeight })
+      el.onerror = () => reject(new Error('Không đọc được ảnh'))
+      el.src = objectUrl
+    })
+    return { buffer, width, height, extension: IMAGE_EXT_BY_MIME[blob.type] || 'jpeg' }
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
+}
+
+// Quy đổi gần đúng độ rộng cột (đơn vị ký tự Excel) / chiều cao dòng (point)
+// sang pixel - dùng để tính kích thước khung ảnh và fit ảnh (giữ tỉ lệ) vào
+// bên trong, không kéo dãn méo ảnh.
+function colWidthPx(width) {
+  return Math.round((width ?? 8.43) * 7 + 5)
+}
+
+function rowHeightPx(points) {
+  return Math.round(((points ?? 15) * 96) / 72)
+}
+
+function fitContain(srcWidth, srcHeight, maxWidth, maxHeight) {
+  const scale = Math.min(maxWidth / srcWidth, maxHeight / srcHeight, 1)
+  return { width: Math.round(srcWidth * scale), height: Math.round(srcHeight * scale) }
+}
+
+// Excel neo ảnh bằng {cột, dòng} + phần lẻ (tỉ lệ trong đúng cột/dòng đó) chứ
+// không phải toạ độ pixel tuyệt đối - hàm này quy đổi 1 khoảng lệch pixel
+// (để canh ảnh vào giữa khung) thành {số cột/dòng nguyên cộng thêm, phần lẻ}.
+function anchorOffset(startIndex0, offsetPx, unitPx) {
+  const whole = Math.floor(offsetPx / unitPx)
+  const fraction = (offsetPx - whole * unitPx) / unitPx
+  return startIndex0 + whole + fraction
+}
+
+// Điền ảnh + tên lỗi vào sheet "Picture Major/Minor Defects": mỗi ảnh chiếm 1
+// trong 16 khung có sẵn của template, ảnh được fit giữ tỉ lệ (không méo) và
+// canh giữa trong khung. Vượt quá 16 ảnh thì phần dư trả về qua overflow.
+async function fillPictureSheet(workbook, ws, entries, onProgress, label) {
+  const slots = getPictureSlots()
+  const used = entries.slice(0, slots.length)
+  const overflow = entries.slice(slots.length).map((entry) => entry.name)
+
+  for (let i = 0; i < used.length; i++) {
+    const entry = used[i]
+    const slot = slots[i]
+    onProgress?.(`Đang chèn ảnh ${label} ${i + 1}/${used.length}...`)
+
+    ws.getCell(slot.labelRow, slot.labelCol).value = entry.name
+
+    let loaded
+    try {
+      loaded = await loadImageForExcel(entry.imageUrl)
+    } catch (err) {
+      console.error(`[excelExport] Không tải được ảnh: ${entry.imageUrl}`, err)
+      continue
+    }
+
+    let boxWidthPx = 0
+    for (let c = slot.boxCol; c < slot.boxCol + PICTURE_BOX_COL_SPAN; c++) {
+      boxWidthPx += colWidthPx(ws.getColumn(c).width)
+    }
+    let boxHeightPx = 0
+    for (let r = slot.boxRow; r < slot.boxRow + PICTURE_BOX_ROW_SPAN; r++) {
+      boxHeightPx += rowHeightPx(ws.getRow(r).height)
+    }
+
+    const { width, height } = fitContain(
+      loaded.width,
+      loaded.height,
+      boxWidthPx * PICTURE_BOX_FIT_RATIO,
+      boxHeightPx * PICTURE_BOX_FIT_RATIO,
+    )
+    const offsetX = (boxWidthPx - width) / 2
+    const offsetY = (boxHeightPx - height) / 2
+
+    const imageId = workbook.addImage({ buffer: loaded.buffer, extension: loaded.extension })
+    ws.addImage(imageId, {
+      tl: {
+        col: anchorOffset(slot.boxCol - 1, offsetX, colWidthPx(ws.getColumn(slot.boxCol).width)),
+        row: anchorOffset(slot.boxRow - 1, offsetY, rowHeightPx(ws.getRow(slot.boxRow).height)),
+      },
+      ext: { width, height },
+    })
+  }
+
+  return { overflow }
 }
 
 function downloadBlob(buffer, filename) {
@@ -125,9 +319,26 @@ export async function exportTicketsExcel(ticketIds, { onProgress } = {}) {
   const ws = workbook.getWorksheet(SHEET_NAME)
   if (!ws) throw new Error(`Không tìm thấy sheet "${SHEET_NAME}" trong file mẫu`)
 
-  clearOldDefectRows(ws)
   const aggregated = aggregateDefects(tickets)
   const { overflow } = writeDefectRows(ws, aggregated)
+
+  const wsMajor = workbook.getWorksheet(PICTURE_SHEET_MAJOR)
+  const wsMinor = workbook.getWorksheet(PICTURE_SHEET_MINOR)
+  const imageOverflow = { major: [], minor: [] }
+  if (wsMajor) {
+    const majorImages = collectDefectImages(tickets, 'MAJOR')
+    imageOverflow.major = (await fillPictureSheet(workbook, wsMajor, majorImages, onProgress, 'Major')).overflow
+  }
+  if (wsMinor) {
+    const minorImages = collectDefectImages(tickets, 'MINOR')
+    imageOverflow.minor = (await fillPictureSheet(workbook, wsMinor, minorImages, onProgress, 'Minor')).overflow
+  }
+
+  // Dòng Total (90) dùng công thức SUM(H27:H89)/SUM(I27:I89) có sẵn trong
+  // template - ép Excel tính lại khi mở file, vì openpyxl/exceljs không tự
+  // tính công thức nên nếu không có cờ này, Excel sẽ hiển thị kết quả CŨ đã
+  // cache sẵn trong file mẫu thay vì tổng số lỗi vừa in ra.
+  workbook.calcProperties.fullCalcOnLoad = true
 
   onProgress?.('Đang tạo file Excel...')
   const buffer = await workbook.xlsx.writeBuffer()
@@ -139,5 +350,5 @@ export async function exportTicketsExcel(ticketIds, { onProgress } = {}) {
       : `BB_PREFINAL_FINAL_${firstTicket?.ticketCode || ids[0]}.xlsx`
   downloadBlob(buffer, filename)
 
-  return { overflow }
+  return { overflow, imageOverflow }
 }

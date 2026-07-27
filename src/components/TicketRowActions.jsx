@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 
-export default function TicketRowActions({ ticket, busy, onView, onEdit, onExportPdf, onExportExcel, onDelete }) {
+export default function TicketRowActions({
+  ticket,
+  busy,
+  isAdmin,
+  onView,
+  onEdit,
+  onExportPdf,
+  onExportExcel,
+  onUnexport,
+  onDelete,
+}) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef(null)
 
@@ -46,7 +56,8 @@ export default function TicketRowActions({ ticket, busy, onView, onEdit, onExpor
           </button>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || (ticket.exported && !isAdmin)}
+            title={ticket.exported && !isAdmin ? 'Phiếu đã xuất, không thể xuất lại' : undefined}
             onClick={() => runAndClose(onExportPdf)}
             className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
           >
@@ -54,12 +65,23 @@ export default function TicketRowActions({ ticket, busy, onView, onEdit, onExpor
           </button>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || (ticket.exported && !isAdmin)}
+            title={ticket.exported && !isAdmin ? 'Phiếu đã xuất, không thể xuất lại' : undefined}
             onClick={() => runAndClose(onExportExcel)}
             className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
           >
             Xuất Excel
           </button>
+          {isAdmin && ticket.exported && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => runAndClose(onUnexport)}
+              className="w-full text-left px-3 py-2 text-sm text-sky-600 hover:bg-sky-50 disabled:opacity-50"
+            >
+              Cho phép xuất lại
+            </button>
+          )}
           {ticket.status === 'DRAFT' && (
             <button
               type="button"

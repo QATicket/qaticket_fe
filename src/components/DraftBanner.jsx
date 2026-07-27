@@ -8,7 +8,7 @@ export default function DraftBanner({ onRestore, onDismiss }) {
         <button
           type="button"
           onClick={onRestore}
-          className="bg-brand-orange text-white text-sm font-semibold rounded-md px-4 py-1.5 hover:opacity-90"
+          className="bg-brand-navy text-white text-sm font-semibold rounded-md px-4 py-1.5 hover:opacity-90"
         >
           Khôi phục
         </button>

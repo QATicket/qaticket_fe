@@ -80,7 +80,7 @@ export default function GeneralInfoCard({
 
         <Field label="Inspection Stage" error={errors.inspectionStage}>
           <select
-            className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"
+            className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy"
             value={form.inspectionStage}
             onChange={(e) => onChange({ inspectionStage: e.target.value })}
           >

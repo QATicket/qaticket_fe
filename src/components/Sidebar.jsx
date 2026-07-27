@@ -42,7 +42,7 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
           type="button"
           onClick={onToggleCollapsed}
           title="Hiện menu"
-          className="hidden sm:flex items-center justify-center fixed top-4 left-4 z-40 w-9 h-9 text-base font-medium bg-slate-900 text-white rounded-full hover:bg-slate-800"
+          className="hidden sm:flex items-center justify-center fixed top-4 left-4 z-40 w-9 h-9 text-base font-medium bg-brand-navy text-white rounded-full hover:bg-brand-navyDark"
         >
           →
         </button>
@@ -51,13 +51,13 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
       <aside
         className={`
           fixed inset-y-0 left-0 z-40 w-64
-          bg-slate-900 text-slate-200 flex flex-col
+          bg-brand-navy text-slate-200 flex flex-col
           transform transition-transform duration-200
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
           ${collapsed ? 'sm:-translate-x-full' : 'sm:translate-x-0'}
         `}
       >
-        <div className="px-5 py-5 border-b border-slate-700 flex items-center justify-between gap-2">
+        <div className="px-5 py-5 border-b border-white/10 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h1 className="font-bold text-white text-base leading-tight truncate">Garment QA</h1>
             <p className="text-xs text-slate-400 mt-0.5">Checking System</p>
@@ -66,7 +66,7 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
             type="button"
             onClick={onToggleCollapsed}
             title="Ẩn menu"
-            className="hidden sm:flex items-center justify-center text-base font-medium text-slate-300 hover:text-white border border-slate-600 rounded-full w-7 h-7 hover:bg-slate-800 shrink-0"
+            className="hidden sm:flex items-center justify-center text-base font-medium text-slate-300 hover:text-white border border-white/20 rounded-full w-7 h-7 hover:bg-brand-navyLight shrink-0"
           >
             ←
           </button>
@@ -80,8 +80,8 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
               onClick={() => handleNavigate(item.key)}
               className={`w-full text-left px-5 py-3 text-sm font-medium transition-colors ${
                 view === item.key
-                  ? 'bg-brand-red text-white'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  ? 'bg-brand-navyLight text-white'
+                  : 'text-slate-300 hover:bg-brand-navyLight/60 hover:text-white'
               }`}
             >
               {item.label}
@@ -89,7 +89,7 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
           ))}
         </nav>
 
-        <div className="border-t border-slate-700 px-5 py-4 shrink-0">
+        <div className="border-t border-white/10 px-5 py-4 shrink-0">
           <p className="text-xs text-slate-400">Đăng nhập với</p>
           <p className="text-sm font-medium text-white truncate">
             {userInfo?.fullName || userInfo?.username}
@@ -100,7 +100,7 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
           <button
             type="button"
             onClick={onLogout}
-            className="mt-3 w-full text-sm text-slate-300 hover:text-white border border-slate-600 rounded-md py-1.5 hover:bg-slate-800"
+            className="mt-3 w-full text-sm text-slate-300 hover:text-white border border-white/20 rounded-md py-1.5 hover:bg-brand-navyLight"
           >
             Đăng xuất
           </button>

@@ -34,7 +34,7 @@ export default function DefectsCard({
         <button
           type="button"
           onClick={addDefect}
-          className="border-2 border-brand-red text-brand-red text-sm font-semibold rounded-md px-4 py-1.5 hover:bg-red-50"
+          className="border-2 border-brand-navy text-brand-navy text-sm font-semibold rounded-md px-4 py-1.5 hover:bg-slate-50"
         >
           + Add Defect
         </button>

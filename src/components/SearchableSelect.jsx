@@ -43,7 +43,7 @@ export default function SearchableSelect({
   return (
     <div className="relative" ref={containerRef}>
       <input
-        className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange disabled:bg-slate-100 disabled:text-slate-400 ${
+        className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy disabled:bg-slate-100 disabled:text-slate-400 ${
           error ? 'border-brand-red' : 'border-slate-300'
         }`}
         placeholder={placeholder}

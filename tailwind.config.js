@@ -7,6 +7,9 @@ export default {
         brand: {
           orange: '#f5821f',
           red: '#e02424',
+          navy: '#0b2a52',
+          navyDark: '#071a33',
+          navyLight: '#1b3f75',
         },
       },
     },
