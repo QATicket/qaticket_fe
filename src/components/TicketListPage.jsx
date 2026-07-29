@@ -6,6 +6,7 @@ import { exportTicketsExcel } from '../utils/excelExport'
 import TicketRowActions from './TicketRowActions'
 import TicketDetailModal from './TicketDetailModal'
 import ExportProgressModal from './ExportProgressModal'
+import QcChecklistModal from './QcChecklistModal'
 
 const STATUS_LABEL = { DRAFT: 'Nháp', SUBMITTED: 'Đã nộp' }
 const FILTER_INPUT_CLASS =
@@ -34,6 +35,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
   const [viewingTicketId, setViewingTicketId] = useState(null)
   const [pdfProgress, setPdfProgress] = useState('')
   const [excelProgress, setExcelProgress] = useState('')
+  const [qcChecklistTicket, setQcChecklistTicket] = useState(null)
 
   useEffect(() => {
     getFactories()
@@ -151,17 +153,25 @@ export default function TicketListPage({ userInfo, onEdit }) {
     }
   }
 
-  async function handleExportExcel(ticket) {
+  function handleExportExcel(ticket) {
     if (ticket.exported && !isAdmin) {
       setError('Phiếu này đã được xuất, không thể xuất lại')
       return
     }
+    setError('')
+    setQcChecklistTicket(ticket)
+  }
+
+  async function handleConfirmQcChecklist(qcChecklistValues) {
+    const ticket = qcChecklistTicket
+    setQcChecklistTicket(null)
     setBusyId(ticket.id)
     setExcelProgress('Đang chuẩn bị...')
     setError('')
     try {
       const { overflow, imageOverflow } = await exportTicketsExcel(ticket.id, {
         onProgress: setExcelProgress,
+        qcChecklistValues,
       })
       await markExported(ticket)
       const messages = []
@@ -415,6 +425,13 @@ export default function TicketListPage({ userInfo, onEdit }) {
         <TicketDetailModal
           ticketId={viewingTicketId}
           onClose={() => setViewingTicketId(null)}
+        />
+      )}
+
+      {qcChecklistTicket && (
+        <QcChecklistModal
+          onConfirm={handleConfirmQcChecklist}
+          onCancel={() => setQcChecklistTicket(null)}
         />
       )}
 

@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs'
 import { getQaTicket } from '../api/qaTickets'
+import { QC_CHECKLIST_GROUPS } from './qcChecklist'
 
 // Xem src/CLAUDE.md (mục "CẬP NHẬT (v2)") - đây là bản JS port 1:1 của
 // fill_qa_report.py, chạy trong trình duyệt thay vì Python/openpyxl.
@@ -14,6 +15,17 @@ const MINOR_COL = 9 // I
 const REMARK_COL = 10 // J (merge J:M)
 const REMARK_END_COL = 13 // M
 const TOTAL_COLS = 13 // A..M
+
+// Các ô nền vàng tĩnh ở dòng 4-5 (header, xem Header mapping.md) - theo yêu cầu
+// bỏ màu vàng khi xuất, không đụng đến việc các ô này có phải đích ghi giá trị
+// header hay không (hiện code chưa ghi header động - xem docstring exportTicketsExcel).
+const YELLOW_HEADER_CELLS = ['B4', 'D4', 'H4', 'I4', 'M4', 'B5', 'H5', 'J5', 'M5']
+
+// L16 ("Gross weight < 15Kg") có sẵn 1 rule conditional format trong template:
+// tô đỏ nếu giá trị ô > 15. Vì ta ghi chữ "v"/"x" (không phải số) vào đây, Excel
+// coi MỌI chuỗi text là "lớn hơn" mọi số khi so sánh cellIs -> rule luôn trúng,
+// tô đỏ ô này dù không liên quan gì đến logic cân nặng gốc. Bỏ rule này khi xuất.
+const GROSS_WEIGHT_CONDITIONAL_REF = 'L16'
 
 const CATEGORY_FONT_SIZE = 13
 const ITEM_FONT_SIZE = 11
@@ -61,6 +73,39 @@ function aggregateDefects(tickets) {
     }
   }
   return categories
+}
+
+// Ghi lựa chọn v/x (từ QcChecklistModal, xem qcChecklist.js) vào vùng "MATERIALS"
+// (dòng 8-24) của template - 2 ô riêng biệt như thiết kế gốc: checkCol nhận "v"
+// khi đạt, rejectCol nhận "x" khi không đạt (ô còn lại để trống). Một vài ô
+// reject trong template gốc (H20, H23, H24 - nhóm Labels & APPEARANCE) thiếu
+// sẵn "horizontal: center" nên chữ bị lệch trái - ép căn giữa lại cho cả 2 ô
+// mỗi dòng để đồng nhất, không đụng border/fill.
+function writeQcChecklist(ws, qcChecklistValues) {
+  if (!qcChecklistValues) return
+  for (const group of QC_CHECKLIST_GROUPS) {
+    for (const item of group.items) {
+      const value = qcChecklistValues[item.id]
+      const checkCell = ws.getCell(item.row, group.checkCol)
+      const rejectCell = ws.getCell(item.row, group.rejectCol)
+      checkCell.value = value === 'x' ? null : 'v'
+      rejectCell.value = value === 'x' ? 'x' : null
+      checkCell.alignment = { horizontal: 'center', vertical: 'middle' }
+      rejectCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    }
+  }
+}
+
+function clearYellowHeaderFill(ws) {
+  for (const address of YELLOW_HEADER_CELLS) {
+    ws.getCell(address).fill = { type: 'pattern', pattern: 'none' }
+  }
+}
+
+function removeGrossWeightConditionalFormatting(ws) {
+  ws.conditionalFormattings = (ws.conditionalFormattings || []).filter(
+    (cf) => cf.ref !== GROSS_WEIGHT_CONDITIONAL_REF,
+  )
 }
 
 function unmergeDefectRange(ws) {
@@ -302,7 +347,7 @@ function downloadBlob(buffer, filename) {
  * từ BE - và tải xuống. Dòng 1-26 (header) và dòng 90 trở xuống (Total/AQL)
  * giữ nguyên từ template - xem src/CLAUDE.md.
  */
-export async function exportTicketsExcel(ticketIds, { onProgress } = {}) {
+export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistValues } = {}) {
   const ids = Array.isArray(ticketIds) ? ticketIds : [ticketIds]
 
   onProgress?.('Đang tải dữ liệu phiếu...')
@@ -318,6 +363,10 @@ export async function exportTicketsExcel(ticketIds, { onProgress } = {}) {
   await workbook.xlsx.load(arrayBuffer)
   const ws = workbook.getWorksheet(SHEET_NAME)
   if (!ws) throw new Error(`Không tìm thấy sheet "${SHEET_NAME}" trong file mẫu`)
+
+  clearYellowHeaderFill(ws)
+  removeGrossWeightConditionalFormatting(ws)
+  writeQcChecklist(ws, qcChecklistValues)
 
   const aggregated = aggregateDefects(tickets)
   const { overflow } = writeDefectRows(ws, aggregated)
