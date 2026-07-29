@@ -8,6 +8,7 @@ import {
   getLines,
   getGroups,
   getCustomers,
+  getStyles,
   getGarmentTypes,
   getGarmentLocations,
   getDefectItems,
@@ -22,7 +23,7 @@ function toOptions(list, labelKey = 'name') {
   return list.map((item) => ({ value: item.id, label: item[labelKey] }))
 }
 
-export default function QaTicketFormPage({ userInfo, ticketId }) {
+export default function QaTicketFormPage({ userInfo, ticketId, onBackToList }) {
   const [form, setForm] = useState(() => ({
     ...emptyFormState(),
     staffId: userInfo.staffId,
@@ -38,6 +39,7 @@ export default function QaTicketFormPage({ userInfo, ticketId }) {
   const [lineOptions, setLineOptions] = useState([])
   const [groupOptions, setGroupOptions] = useState([])
   const [customerOptions, setCustomerOptions] = useState([])
+  const [styleOptions, setStyleOptions] = useState([])
   const [garmentTypeOptions, setGarmentTypeOptions] = useState([])
   const [garmentLocationOptions, setGarmentLocationOptions] = useState([])
   const [defectItemOptions, setDefectItemOptions] = useState([])
@@ -52,6 +54,7 @@ export default function QaTicketFormPage({ userInfo, ticketId }) {
   useEffect(() => {
     getFactories().then((list) => setFactoryOptions(toOptions(list))).catch(() => {})
     getCustomers().then((list) => setCustomerOptions(toOptions(list))).catch(() => {})
+    getStyles().then((list) => setStyleOptions(toOptions(list))).catch(() => {})
     getGarmentTypes().then((list) => setGarmentTypeOptions(toOptions(list))).catch(() => {})
     getDefectItems()
       .then((list) =>
@@ -203,6 +206,28 @@ export default function QaTicketFormPage({ userInfo, ticketId }) {
   return (
     <div className="min-h-screen py-6 px-3 sm:px-6">
       <div className="max-w-5xl mx-auto">
+        {onBackToList && (
+          <button
+            type="button"
+            onClick={onBackToList}
+            className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-white"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="w-4 h-4"
+            >
+              <path
+                fillRule="evenodd"
+                d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Quay lại danh sách
+          </button>
+        )}
+
         {showDraftBanner && <DraftBanner onRestore={restoreDraft} onDismiss={dismissDraft} />}
 
         {serverError && (
@@ -219,6 +244,7 @@ export default function QaTicketFormPage({ userInfo, ticketId }) {
             lineOptions={lineOptions}
             groupOptions={groupOptions}
             customerOptions={customerOptions}
+            styleOptions={styleOptions}
             garmentTypeOptions={garmentTypeOptions}
           />
 

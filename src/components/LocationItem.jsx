@@ -1,7 +1,10 @@
 import { useRef, useState } from 'react'
 import SearchableSelect from './SearchableSelect'
 import NumberStepper from './NumberStepper'
+import AddImageTile, { CameraIcon, GalleryIcon } from './AddImageTile'
+import ImageEditorModal from './ImageEditorModal'
 import { uploadImages } from '../api/uploads'
+import { blobToFile } from '../utils/image'
 
 export default function LocationItem({
   location,
@@ -13,6 +16,7 @@ export default function LocationItem({
 }) {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const [pendingCameraFile, setPendingCameraFile] = useState(null)
   const cameraInputRef = useRef(null)
   const galleryInputRef = useRef(null)
 
@@ -79,51 +83,49 @@ export default function LocationItem({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mb-2">
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => {
-            handleFilesSelected(e.target.files)
-            e.target.value = ''
-          }}
-        />
-        <input
-          ref={galleryInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            handleFilesSelected(e.target.files)
-            e.target.value = ''
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => cameraInputRef.current?.click()}
-          disabled={uploading}
-          className="text-xs font-medium border border-slate-300 rounded-md px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50"
-        >
-          Chụp ảnh
-        </button>
-        <button
-          type="button"
-          onClick={() => galleryInputRef.current?.click()}
-          disabled={uploading}
-          className="text-xs font-medium border border-slate-300 rounded-md px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50"
-        >
-          Thư viện
-        </button>
-        {uploading && <span className="text-xs text-slate-400">Đang tải ảnh lên...</span>}
-      </div>
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          e.target.value = ''
+          if (file) setPendingCameraFile(file)
+        }}
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          handleFilesSelected(e.target.files)
+          e.target.value = ''
+        }}
+      />
+      {uploading && <p className="text-xs text-slate-400 mb-2">Đang tải ảnh lên...</p>}
       {uploadError && <p className="text-xs text-brand-red mb-2">{uploadError}</p>}
 
+      <div className="flex gap-2">
+        <AddImageTile
+          onClick={() => cameraInputRef.current?.click()}
+          disabled={uploading}
+          icon={<CameraIcon />}
+          label="Chụp ảnh"
+        />
+        <AddImageTile
+          onClick={() => galleryInputRef.current?.click()}
+          disabled={uploading}
+          icon={<GalleryIcon />}
+          label="Thư viện"
+        />
+      </div>
+
       {location.images.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 mt-2">
           {location.images.map((url) => (
             <div key={url} className="relative w-16 h-16">
               <img src={url} alt="" className="w-16 h-16 object-cover rounded-md border border-slate-200" />
@@ -137,6 +139,17 @@ export default function LocationItem({
             </div>
           ))}
         </div>
+      )}
+
+      {pendingCameraFile && (
+        <ImageEditorModal
+          file={pendingCameraFile}
+          onCancel={() => setPendingCameraFile(null)}
+          onConfirm={(blob) => {
+            setPendingCameraFile(null)
+            handleFilesSelected([blobToFile(blob, `capture-${Date.now()}.jpg`)])
+          }}
+        />
       )}
     </div>
   )

@@ -24,6 +24,17 @@ export function emptyDefect() {
   }
 }
 
+export function emptySpecImages() {
+  return {
+    APPROVED_SAMPLE: [],
+    SIZE_SPEC: [],
+    PACKING: [],
+    HANGTAG_LABEL: [],
+    // ảnh cũ (trước khi có field type) chỉ để hiển thị, không gán lại type khi lưu
+    OTHER: [],
+  }
+}
+
 export function emptyFormState() {
   return {
     staffId: null,
@@ -33,12 +44,15 @@ export function emptyFormState() {
     groupId: null,
     inspectionStage: 'INLINE',
     poId: null,
+    styleId: null,
     inspectedQty: 1,
     customerId: null,
     garmentTypeId: null,
     status: 'DRAFT',
     id: null,
     ticketCode: null,
+    images: [],
+    specImages: emptySpecImages(),
     defects: [emptyDefect()],
   }
 }

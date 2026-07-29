@@ -4,11 +4,30 @@ import { exportTicketPdf } from '../utils/pdfExport'
 
 const STATUS_LABEL = { DRAFT: 'Nháp', SUBMITTED: 'Đã nộp' }
 
+const SPEC_IMAGE_TYPES = ['APPROVED_SAMPLE', 'SIZE_SPEC', 'PACKING', 'HANGTAG_LABEL']
+const SPEC_IMAGE_LABELS = {
+  APPROVED_SAMPLE: 'Mẫu duyệt',
+  SIZE_SPEC: 'Bảng thông số kích thước',
+  PACKING: 'Quy cách đóng thùng/Bao bì',
+  HANGTAG_LABEL: 'Thẻ treo & Nhãn hiệu',
+  OTHER: 'Khác',
+}
+
+function groupSpecImagesByType(specImages) {
+  const buckets = { APPROVED_SAMPLE: [], SIZE_SPEC: [], PACKING: [], HANGTAG_LABEL: [], OTHER: [] }
+  ;(specImages || []).forEach((img) => {
+    const bucket = SPEC_IMAGE_TYPES.includes(img.type) ? img.type : 'OTHER'
+    buckets[bucket].push(img)
+  })
+  return buckets
+}
+
 export default function TicketDetailModal({ ticketId, onClose }) {
   const [ticket, setTicket] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [pdfProgress, setPdfProgress] = useState('')
+  const [previewUrl, setPreviewUrl] = useState(null)
 
   async function handleExportPdf() {
     setPdfProgress('Đang chuẩn bị...')
@@ -84,6 +103,39 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                 />
               </div>
 
+              {ticket.specImages?.length > 0 && (
+                <div className="mb-5">
+                  <h3 className="font-semibold text-slate-700 text-sm mb-2">Hình ảnh Spec</h3>
+                  <div className="space-y-3">
+                    {Object.entries(groupSpecImagesByType(ticket.specImages)).map(
+                      ([type, imgs]) =>
+                        imgs.length > 0 && (
+                          <div key={type}>
+                            <p className="text-xs font-medium text-slate-500 mb-1">
+                              {SPEC_IMAGE_LABELS[type]}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {imgs.map((img) => (
+                                <button
+                                  key={img.id}
+                                  type="button"
+                                  onClick={() => setPreviewUrl(img.imageUrl)}
+                                >
+                                  <img
+                                    src={img.imageUrl}
+                                    alt=""
+                                    className="w-14 h-14 object-cover rounded border border-slate-200"
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ),
+                    )}
+                  </div>
+                </div>
+              )}
+
               <h3 className="font-semibold text-slate-700 text-sm mb-2">
                 Defects ({ticket.defects?.length || 0})
               </h3>
@@ -132,13 +184,17 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                           {loc.images?.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-2">
                               {loc.images.map((img) => (
-                                <a key={img.id} href={img.imageUrl} target="_blank" rel="noreferrer">
+                                <button
+                                  key={img.id}
+                                  type="button"
+                                  onClick={() => setPreviewUrl(img.imageUrl)}
+                                >
                                   <img
                                     src={img.imageUrl}
                                     alt=""
                                     className="w-14 h-14 object-cover rounded border border-slate-200"
                                   />
-                                </a>
+                                </button>
                               ))}
                             </div>
                           )}
@@ -155,6 +211,28 @@ export default function TicketDetailModal({ ticketId, onClose }) {
           )}
         </div>
       </div>
+
+      {previewUrl && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-4"
+          onClick={() => setPreviewUrl(null)}
+        >
+          <img
+            src={previewUrl}
+            alt=""
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            onClick={() => setPreviewUrl(null)}
+            aria-label="Đóng"
+            className="absolute top-4 right-4 text-white text-3xl leading-none hover:opacity-70"
+          >
+            &times;
+          </button>
+        </div>
+      )}
     </div>
   )
 }
