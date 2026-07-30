@@ -27,6 +27,9 @@ const YELLOW_HEADER_CELLS = ['B4', 'D4', 'H4', 'I4', 'M4', 'B5', 'H5', 'J5', 'M5
 // tô đỏ ô này dù không liên quan gì đến logic cân nặng gốc. Bỏ rule này khi xuất.
 const GROSS_WEIGHT_CONDITIONAL_REF = 'L16'
 
+// M3_checkbox (xem Header mapping.md): TRUE nếu chọn AQL 2.5, FALSE nếu AQL 1.5.
+const AQL_LEVEL_CELL = 'M3'
+
 const CATEGORY_FONT_SIZE = 13
 const ITEM_FONT_SIZE = 11
 
@@ -42,6 +45,21 @@ const PICTURE_BOX_COL_SPAN = 5
 const PICTURE_LABEL_ROW_OFFSET = 8
 const PICTURE_BOX_FIT_RATIO = 0.92 // chừa lề nhỏ quanh ảnh trong khung
 const IMAGE_EXT_BY_MIME = { 'image/jpeg': 'jpeg', 'image/png': 'png', 'image/gif': 'gif' }
+
+// Sheet "picture accept": cùng lưới 4x4 khung ảnh (cùng cột A/F/K/P như trên),
+// nhưng 4 hàng khung liền kề nhau (4, 12, 20, 28 - không có dòng nhãn "Defect:"
+// chen giữa như 2 sheet Major/Minor) nên không cần labelOffset.
+const PICTURE_ACCEPT_SHEET = 'picture accept'
+const PICTURE_ACCEPT_ROW_STARTS = [4, 12, 20, 28]
+
+// type (từ specImages, xem GeneralInfoCard.jsx) -> tên hiển thị ở overflow list.
+// type null/không rõ (ảnh cũ) rơi vào 'Khác'.
+const SPEC_IMAGE_TYPE_LABELS = {
+  APPROVED_SAMPLE: 'Mẫu duyệt (Approved Sample)',
+  SIZE_SPEC: 'Bảng thông số kích thước',
+  PACKING: 'Quy cách đóng thùng/Bao bì',
+  HANGTAG_LABEL: 'Thẻ treo & Nhãn hiệu',
+}
 
 // Gộp 2 cấp: defect (nhóm lỗi lớn, vd "1. FABRIC DEFECTS/LỖI VẢI") -> defectItem
 // (lỗi cụ thể trong nhóm đó, vd "Đứt chỉ"). Trong cùng 1 nhóm, các defectItem
@@ -100,6 +118,32 @@ function clearYellowHeaderFill(ws) {
   for (const address of YELLOW_HEADER_CELLS) {
     ws.getCell(address).fill = { type: 'pattern', pattern: 'none' }
   }
+}
+
+// dd/mm/yyyy, không kèm giờ - theo yêu cầu ô M4 (Date) chỉ hiện ngày.
+function formatDateOnly(isoString) {
+  if (!isoString) return ''
+  const d = new Date(isoString)
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `${dd}/${mm}/${d.getFullYear()}`
+}
+
+// Điền các ô header động (dòng 4-5) từ ticket đầu tiên - xem Header mapping.md.
+function writeHeaderValues(ws, ticket) {
+  if (!ticket) return
+  ws.getCell('B4').value = ticket.customer?.name ?? ''
+  ws.getCell('D4').value = ticket.purchaseOrder?.name ?? ''
+  ws.getCell('H4').value = ticket.style?.name ?? ''
+  ws.getCell('M4').value = formatDateOnly(ticket.createdAt)
+  ws.getCell('B5').value = ticket.qtySize ?? ''
+  ws.getCell('E5').value = ticket.samplingSize ?? ''
+  ws.getCell('M5').value = ticket.staff?.name ?? ''
+}
+
+function writeAqlLevelCell(ws, ticket) {
+  if (!ticket?.aqlLevel) return
+  ws.getCell(AQL_LEVEL_CELL).value = ticket.aqlLevel === '2.5'
 }
 
 function removeGrossWeightConditionalFormatting(ws) {
@@ -216,11 +260,31 @@ function collectDefectImages(tickets, severity) {
   return entries
 }
 
-function getPictureSlots() {
+// Gom toàn bộ ảnh Spec (specImages, chỉ ticket FINAL mới có - xem GeneralInfoCard.jsx)
+// để đổ vào sheet "picture accept".
+function collectSpecImages(tickets) {
+  const entries = []
+  for (const ticket of tickets) {
+    for (const img of ticket.specImages || []) {
+      if (!img.imageUrl) continue
+      entries.push({ name: SPEC_IMAGE_TYPE_LABELS[img.type] || 'Khác', imageUrl: img.imageUrl })
+    }
+  }
+  return entries
+}
+
+// labelOffset undefined/null -> khung không có dòng nhãn riêng (vd sheet
+// "picture accept"), chỉ chèn ảnh, bỏ qua việc ghi tên loại ảnh bên dưới.
+function getPictureSlots(rowStarts, labelOffset) {
   const slots = []
-  for (const boxRow of PICTURE_BOX_ROW_STARTS) {
+  for (const boxRow of rowStarts) {
     for (const boxCol of PICTURE_BOX_COL_STARTS) {
-      slots.push({ boxRow, boxCol, labelRow: boxRow + PICTURE_LABEL_ROW_OFFSET, labelCol: boxCol + 1 })
+      slots.push({
+        boxRow,
+        boxCol,
+        labelRow: labelOffset != null ? boxRow + labelOffset : null,
+        labelCol: labelOffset != null ? boxCol + 1 : null,
+      })
     }
   }
   return slots
@@ -275,8 +339,16 @@ function anchorOffset(startIndex0, offsetPx, unitPx) {
 // Điền ảnh + tên lỗi vào sheet "Picture Major/Minor Defects": mỗi ảnh chiếm 1
 // trong 16 khung có sẵn của template, ảnh được fit giữ tỉ lệ (không méo) và
 // canh giữa trong khung. Vượt quá 16 ảnh thì phần dư trả về qua overflow.
-async function fillPictureSheet(workbook, ws, entries, onProgress, label) {
-  const slots = getPictureSlots()
+async function fillPictureSheet(
+  workbook,
+  ws,
+  entries,
+  onProgress,
+  label,
+  rowStarts = PICTURE_BOX_ROW_STARTS,
+  labelOffset = PICTURE_LABEL_ROW_OFFSET,
+) {
+  const slots = getPictureSlots(rowStarts, labelOffset)
   const used = entries.slice(0, slots.length)
   const overflow = entries.slice(slots.length).map((entry) => entry.name)
 
@@ -285,7 +357,9 @@ async function fillPictureSheet(workbook, ws, entries, onProgress, label) {
     const slot = slots[i]
     onProgress?.(`Đang chèn ảnh ${label} ${i + 1}/${used.length}...`)
 
-    ws.getCell(slot.labelRow, slot.labelCol).value = entry.name
+    if (slot.labelRow != null) {
+      ws.getCell(slot.labelRow, slot.labelCol).value = entry.name
+    }
 
     let loaded
     try {
@@ -366,6 +440,8 @@ export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistVal
 
   clearYellowHeaderFill(ws)
   removeGrossWeightConditionalFormatting(ws)
+  writeHeaderValues(ws, tickets[0])
+  writeAqlLevelCell(ws, tickets[0])
   writeQcChecklist(ws, qcChecklistValues)
 
   const aggregated = aggregateDefects(tickets)
@@ -373,7 +449,8 @@ export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistVal
 
   const wsMajor = workbook.getWorksheet(PICTURE_SHEET_MAJOR)
   const wsMinor = workbook.getWorksheet(PICTURE_SHEET_MINOR)
-  const imageOverflow = { major: [], minor: [] }
+  const wsAccept = workbook.getWorksheet(PICTURE_ACCEPT_SHEET)
+  const imageOverflow = { major: [], minor: [], spec: [] }
   if (wsMajor) {
     const majorImages = collectDefectImages(tickets, 'MAJOR')
     imageOverflow.major = (await fillPictureSheet(workbook, wsMajor, majorImages, onProgress, 'Major')).overflow
@@ -381,6 +458,12 @@ export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistVal
   if (wsMinor) {
     const minorImages = collectDefectImages(tickets, 'MINOR')
     imageOverflow.minor = (await fillPictureSheet(workbook, wsMinor, minorImages, onProgress, 'Minor')).overflow
+  }
+  if (wsAccept) {
+    const specImages = collectSpecImages(tickets)
+    imageOverflow.spec = (
+      await fillPictureSheet(workbook, wsAccept, specImages, onProgress, 'Spec', PICTURE_ACCEPT_ROW_STARTS, null)
+    ).overflow
   }
 
   // Dòng Total (90) dùng công thức SUM(H27:H89)/SUM(I27:I89) có sẵn trong
