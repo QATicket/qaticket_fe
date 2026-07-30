@@ -117,11 +117,11 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                 )}
               </div>
 
-              {ticket.images?.length > 0 && (
+              {ticket.measurementImages?.length > 0 && (
                 <div className="mb-5">
                   <h3 className="font-semibold text-slate-700 text-sm mb-2">Hình ảnh thông số</h3>
                   <div className="flex flex-wrap gap-2">
-                    {ticket.images.map((img) => (
+                    {ticket.measurementImages.map((img) => (
                       <button key={img.id} type="button" onClick={() => setPreviewUrl(img.imageUrl)}>
                         <img
                           src={img.imageUrl}

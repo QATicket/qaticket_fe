@@ -61,6 +61,18 @@ const SPEC_IMAGE_TYPE_LABELS = {
   HANGTAG_LABEL: 'Thẻ treo & Nhãn hiệu',
 }
 
+// Sheet "Measurement sheet": không có khung ảnh cố định như các sheet trên,
+// chỉ có 1 vùng merge DUY NHẤT A4:S55 để chèn ảnh đo thông số (measurementImages).
+// Theo yêu cầu: chia vùng này thành lưới 4 cột, số hàng tự tính theo số ảnh
+// thực tế (rows = ceil(count / 4)) để ảnh nào cũng có chỗ, không giới hạn 16 ảnh.
+const MEASUREMENT_SHEET = 'Measurement sheet'
+const MEASUREMENT_INSPECTION_STAGE_CELL = 'B3'
+const MEASUREMENT_REGION_FIRST_ROW = 4
+const MEASUREMENT_REGION_LAST_ROW = 55
+const MEASUREMENT_REGION_FIRST_COL = 1 // A
+const MEASUREMENT_REGION_LAST_COL = 19 // S
+const MEASUREMENT_GRID_COLS = 4
+
 // Gộp 2 cấp: defect (nhóm lỗi lớn, vd "1. FABRIC DEFECTS/LỖI VẢI") -> defectItem
 // (lỗi cụ thể trong nhóm đó, vd "Đứt chỉ"). Trong cùng 1 nhóm, các defectItem
 // trùng (id + severity) được cộng dồn số lượng - BE trả severity thật cho
@@ -144,6 +156,11 @@ function writeHeaderValues(ws, ticket) {
 function writeAqlLevelCell(ws, ticket) {
   if (!ticket?.aqlLevel) return
   ws.getCell(AQL_LEVEL_CELL).value = ticket.aqlLevel === '2.5'
+}
+
+function writeInspectionStageCell(ws, ticket) {
+  if (!ticket) return
+  ws.getCell(MEASUREMENT_INSPECTION_STAGE_CELL).value = ticket.inspectionStage ?? ''
 }
 
 function removeGrossWeightConditionalFormatting(ws) {
@@ -268,6 +285,17 @@ function collectSpecImages(tickets) {
     for (const img of ticket.specImages || []) {
       if (!img.imageUrl) continue
       entries.push({ name: SPEC_IMAGE_TYPE_LABELS[img.type] || 'Khác', imageUrl: img.imageUrl })
+    }
+  }
+  return entries
+}
+
+// Gom toàn bộ ảnh đo thông số (measurementImages) để đổ vào sheet "Measurement sheet".
+function collectMeasurementImages(tickets) {
+  const entries = []
+  for (const ticket of tickets) {
+    for (const img of ticket.measurementImages || []) {
+      if (img.imageUrl) entries.push({ imageUrl: img.imageUrl })
     }
   }
   return entries
@@ -400,6 +428,91 @@ async function fillPictureSheet(
   return { overflow }
 }
 
+function regionWidthPx(ws, startCol, endCol) {
+  let total = 0
+  for (let c = startCol; c <= endCol; c++) total += colWidthPx(ws.getColumn(c).width)
+  return total
+}
+
+function regionHeightPx(ws, startRow, endRow) {
+  let total = 0
+  for (let r = startRow; r <= endRow; r++) total += rowHeightPx(ws.getRow(r).height)
+  return total
+}
+
+// Giống anchorOffset() nhưng cho vùng trải qua NHIỀU cột/dòng có độ rộng/cao
+// khác nhau (anchorOffset gốc chỉ quy đổi lệch pixel bên trong ĐÚNG 1 cột/dòng)
+// - dùng khi ảnh có thể rơi vào bất kỳ cột/dòng nào trong vùng lớn (Measurement
+// sheet chỉ có 1 vùng merge A4:S55 duy nhất, không chia sẵn khung như các sheet
+// ảnh khác) bằng cách duyệt trừ dần offset qua từng cột/dòng cho đến khi khớp.
+function colOffsetToAnchor(ws, startCol, endCol, offsetPx) {
+  let col = startCol
+  let remaining = offsetPx
+  while (col < endCol && remaining >= colWidthPx(ws.getColumn(col).width)) {
+    remaining -= colWidthPx(ws.getColumn(col).width)
+    col += 1
+  }
+  return anchorOffset(col - 1, remaining, colWidthPx(ws.getColumn(col).width))
+}
+
+function rowOffsetToAnchor(ws, startRow, endRow, offsetPx) {
+  let row = startRow
+  let remaining = offsetPx
+  while (row < endRow && remaining >= rowHeightPx(ws.getRow(row).height)) {
+    remaining -= rowHeightPx(ws.getRow(row).height)
+    row += 1
+  }
+  return anchorOffset(row - 1, remaining, rowHeightPx(ws.getRow(row).height))
+}
+
+// Điền ảnh đo thông số vào vùng merge A4:S55 của sheet "Measurement sheet":
+// chia thành lưới 4 cột, số hàng tự tính theo số ảnh (rows = ceil(count/4)),
+// mỗi ảnh fit giữ tỉ lệ và canh giữa trong khung của nó - không giới hạn số
+// ảnh tối đa (khung càng nhiều ảnh thì càng nhỏ, không có khái niệm overflow).
+async function fillMeasurementSheet(workbook, ws, entries, onProgress) {
+  if (entries.length === 0) return
+
+  const totalWidthPx = regionWidthPx(ws, MEASUREMENT_REGION_FIRST_COL, MEASUREMENT_REGION_LAST_COL)
+  const totalHeightPx = regionHeightPx(ws, MEASUREMENT_REGION_FIRST_ROW, MEASUREMENT_REGION_LAST_ROW)
+  const gridRows = Math.ceil(entries.length / MEASUREMENT_GRID_COLS)
+  const boxWidthPx = totalWidthPx / MEASUREMENT_GRID_COLS
+  const boxHeightPx = totalHeightPx / gridRows
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i]
+    onProgress?.(`Đang chèn ảnh đo thông số ${i + 1}/${entries.length}...`)
+
+    let loaded
+    try {
+      loaded = await loadImageForExcel(entry.imageUrl)
+    } catch (err) {
+      console.error(`[excelExport] Không tải được ảnh: ${entry.imageUrl}`, err)
+      continue
+    }
+
+    const boxLeftPx = (i % MEASUREMENT_GRID_COLS) * boxWidthPx
+    const boxTopPx = Math.floor(i / MEASUREMENT_GRID_COLS) * boxHeightPx
+
+    const { width, height } = fitContain(
+      loaded.width,
+      loaded.height,
+      boxWidthPx * PICTURE_BOX_FIT_RATIO,
+      boxHeightPx * PICTURE_BOX_FIT_RATIO,
+    )
+    const offsetX = boxLeftPx + (boxWidthPx - width) / 2
+    const offsetY = boxTopPx + (boxHeightPx - height) / 2
+
+    const imageId = workbook.addImage({ buffer: loaded.buffer, extension: loaded.extension })
+    ws.addImage(imageId, {
+      tl: {
+        col: colOffsetToAnchor(ws, MEASUREMENT_REGION_FIRST_COL, MEASUREMENT_REGION_LAST_COL, offsetX),
+        row: rowOffsetToAnchor(ws, MEASUREMENT_REGION_FIRST_ROW, MEASUREMENT_REGION_LAST_ROW, offsetY),
+      },
+      ext: { width, height },
+    })
+  }
+}
+
 function downloadBlob(buffer, filename) {
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -464,6 +577,13 @@ export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistVal
     imageOverflow.spec = (
       await fillPictureSheet(workbook, wsAccept, specImages, onProgress, 'Spec', PICTURE_ACCEPT_ROW_STARTS, null)
     ).overflow
+  }
+
+  const wsMeasurement = workbook.getWorksheet(MEASUREMENT_SHEET)
+  if (wsMeasurement) {
+    writeInspectionStageCell(wsMeasurement, tickets[0])
+    const measurementImages = collectMeasurementImages(tickets)
+    await fillMeasurementSheet(workbook, wsMeasurement, measurementImages, onProgress)
   }
 
   // Dòng Total (90) dùng công thức SUM(H27:H89)/SUM(I27:I89) có sẵn trong

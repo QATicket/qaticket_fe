@@ -50,7 +50,7 @@ export default function GeneralInfoCard({
     setUploadError('')
     try {
       const urls = await uploadImages(files)
-      onChange({ images: [...(form.images || []), ...urls] })
+      onChange({ measurementImages: [...(form.measurementImages || []), ...urls] })
     } catch (err) {
       setUploadError(err.message || 'Upload ảnh thất bại')
     } finally {
@@ -59,7 +59,7 @@ export default function GeneralInfoCard({
   }
 
   function removeImage(url) {
-    onChange({ images: (form.images || []).filter((img) => img !== url) })
+    onChange({ measurementImages: (form.measurementImages || []).filter((img) => img !== url) })
   }
 
   return (
@@ -228,9 +228,9 @@ export default function GeneralInfoCard({
           />
         </div>
 
-        {(form.images || []).length > 0 && (
+        {(form.measurementImages || []).length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {form.images.map((url) => (
+            {form.measurementImages.map((url) => (
               <div key={url} className="relative w-16 h-16">
                 <img src={url} alt="" className="w-16 h-16 object-cover rounded-md border border-slate-200" />
                 <button

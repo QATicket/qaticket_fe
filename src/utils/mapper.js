@@ -25,7 +25,7 @@ export function toPayload(form) {
     customerId: form.customerId,
     garmentTypeId: form.garmentTypeId,
     status: form.status,
-    images: form.images || [],
+    measurementImages: (form.measurementImages || []).map((imageUrl) => ({ imageUrl })),
     defects: form.defects.map((defect) => ({
       defectItemId: defect.defectId,
       severity: defect.severity || null,
@@ -84,7 +84,7 @@ export function fromResponse(ticket) {
     customerId: ticket.customer?.id ?? null,
     garmentTypeId: ticket.garmentType?.id ?? null,
     status: ticket.status,
-    images: (ticket.images || []).map((img) => img.imageUrl),
+    measurementImages: (ticket.measurementImages || []).map((img) => img.imageUrl),
     specImages: groupSpecImages(ticket.specImages),
     aqlLevel: ticket.aqlLevel ?? null,
     qtySize: ticket.qtySize ?? null,

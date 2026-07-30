@@ -51,7 +51,7 @@ export function emptyFormState() {
     status: 'DRAFT',
     id: null,
     ticketCode: null,
-    images: [],
+    measurementImages: [],
     specImages: emptySpecImages(),
     defects: [emptyDefect()],
     aqlLevel: null,
