@@ -3,6 +3,7 @@ import SearchableSelect from './SearchableSelect'
 import NumberStepper from './NumberStepper'
 import AddImageTile, { CameraIcon, GalleryIcon } from './AddImageTile'
 import ImageEditorModal from './ImageEditorModal'
+import AqlSamplingSection from './AqlSamplingSection'
 import { searchPurchaseOrders } from '../api/master'
 import { uploadImages } from '../api/uploads'
 import { blobToFile } from '../utils/image'
@@ -152,7 +153,13 @@ export default function GeneralInfoCard({
             value={form.inspectedQty}
             onChange={(v) => onChange({ inspectedQty: v })}
             error={errors.inspectedQty}
+            disabled={form.inspectionStage === 'FINAL' && !!form.samplingSize}
           />
+          {form.inspectionStage === 'FINAL' && !!form.samplingSize && (
+            <p className="text-[11px] text-slate-400 mt-1">
+              Tự động lấy theo Sampling size (AQL)
+            </p>
+          )}
         </Field>
 
         <Field label="Customer (Khách hàng)" error={errors.customerId}>
@@ -295,6 +302,8 @@ export default function GeneralInfoCard({
               />
             </div>
           )}
+
+          <AqlSamplingSection form={form} onChange={onChange} errors={errors} />
         </div>
       )}
     </div>

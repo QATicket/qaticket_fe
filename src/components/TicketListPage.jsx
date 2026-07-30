@@ -7,6 +7,7 @@ import TicketRowActions from './TicketRowActions'
 import TicketDetailModal from './TicketDetailModal'
 import ExportProgressModal from './ExportProgressModal'
 import QcChecklistModal from './QcChecklistModal'
+import InspectionResultBadge from './InspectionResultBadge'
 
 const STATUS_LABEL = { DRAFT: 'Nháp', SUBMITTED: 'Đã nộp' }
 const FILTER_INPUT_CLASS =
@@ -342,6 +343,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
                 <th className="px-4 py-3">Khâu KT</th>
                 <th className="px-4 py-3">SL</th>
                 <th className="px-4 py-3">Trạng thái</th>
+                <th className="px-4 py-3">KQ AQL</th>
                 <th className="px-4 py-3">Xuất</th>
                 <th className="px-4 py-3">Ngày tạo</th>
                 <th className="px-4 py-3">Hành động</th>
@@ -367,6 +369,14 @@ export default function TicketListPage({ userInfo, onEdit }) {
                     >
                       {STATUS_LABEL[t.status] || t.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-2">
+                    <div className="flex flex-col gap-0.5">
+                      <InspectionResultBadge value={t.inspectionResult} />
+                      {t.samplingSize != null && (
+                        <span className="text-[11px] text-slate-400">n={t.samplingSize}</span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-2">
                     <span
@@ -397,7 +407,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
               ))}
               {items.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={11} className="px-4 py-8 text-center text-slate-400">
+                  <td colSpan={12} className="px-4 py-8 text-center text-slate-400">
                     Chưa có phiếu nào
                   </td>
                 </tr>

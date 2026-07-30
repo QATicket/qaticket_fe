@@ -68,7 +68,6 @@ export default function SearchableSelect({
               className="px-3 py-2 text-sm hover:bg-orange-50 cursor-pointer"
               onMouseDown={() => {
                 onChange(o.value)
-                onFreeTextChange?.(o.label)
                 setQuery('')
                 setOpen(false)
               }}

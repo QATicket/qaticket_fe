@@ -11,6 +11,14 @@ export function validateForm(form) {
   if (!form.customerId) errors.customerId = 'Vui lòng chọn Customer'
   if (!form.garmentTypeId) errors.garmentTypeId = 'Vui lòng chọn Garment'
 
+  if (form.inspectionStage === 'FINAL') {
+    const hasAqlLevel = !!form.aqlLevel
+    const hasQtySize = form.qtySize !== null && form.qtySize !== undefined && form.qtySize !== ''
+    if (hasAqlLevel && !hasQtySize) errors.qtySize = 'Vui lòng nhập Order qty khi đã chọn AQL Level'
+    if (hasQtySize && !hasAqlLevel) errors.aqlLevel = 'Vui lòng chọn AQL Level khi đã nhập Order qty'
+    if (hasQtySize && form.qtySize < 1) errors.qtySize = 'Order qty phải >= 1'
+  }
+
   if (form.defects.length === 0) {
     errors.defectsGeneral = 'Cần thêm ít nhất 1 defect'
   }

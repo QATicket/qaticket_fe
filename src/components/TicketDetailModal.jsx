@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getQaTicket } from '../api/qaTickets'
 import { exportTicketPdf } from '../utils/pdfExport'
+import InspectionResultBadge from './InspectionResultBadge'
 
 const STATUS_LABEL = { DRAFT: 'Nháp', SUBMITTED: 'Đã nộp' }
 
@@ -101,7 +102,37 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                   label="Ngày tạo"
                   value={ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('vi-VN') : '—'}
                 />
+                {ticket.inspectionStage === 'FINAL' && (
+                  <>
+                    <InfoRow label="AQL Level" value={ticket.aqlLevel ?? '—'} />
+                    <InfoRow label="Order qty" value={ticket.qtySize ?? '—'} />
+                    <InfoRow label="Sampling size" value={ticket.samplingSize ?? '—'} />
+                    <InfoRow label="Actual Major Defects" value={ticket.actualMajorDefects ?? '—'} />
+                    <InfoRow label="Actual Minor Defects" value={ticket.actualMinorDefects ?? '—'} />
+                    <InfoRow
+                      label="Kết quả AQL"
+                      value={<InspectionResultBadge value={ticket.inspectionResult} />}
+                    />
+                  </>
+                )}
               </div>
+
+              {ticket.images?.length > 0 && (
+                <div className="mb-5">
+                  <h3 className="font-semibold text-slate-700 text-sm mb-2">Hình ảnh thông số</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {ticket.images.map((img) => (
+                      <button key={img.id} type="button" onClick={() => setPreviewUrl(img.imageUrl)}>
+                        <img
+                          src={img.imageUrl}
+                          alt=""
+                          className="w-14 h-14 object-cover rounded border border-slate-200"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {ticket.specImages?.length > 0 && (
                 <div className="mb-5">

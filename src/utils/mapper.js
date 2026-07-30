@@ -48,6 +48,20 @@ export function toPayload(form) {
     // ảnh cũ type:null giữ nguyên khi PUT (PUT thay thế toàn bộ) để không mất dữ liệu
     ;(form.specImages?.OTHER || []).forEach((url) => specImages.push({ type: null, imageUrl: url }))
     payload.specImages = specImages
+
+    // Field AQL chỉ hợp lệ khi stage FINAL, BE trả 400 nếu gửi lúc stage khác -> không set field
+    // khi không phải FINAL. aqlLevel/qtySize phải đi cùng cặp; actual defects gửi độc lập, có thể
+    // để trống nếu chưa kiểm xong.
+    if (form.aqlLevel && form.qtySize) {
+      payload.aqlLevel = form.aqlLevel
+      payload.qtySize = form.qtySize
+    }
+    if (form.actualMajorDefects !== null && form.actualMajorDefects !== undefined && form.actualMajorDefects !== '') {
+      payload.actualMajorDefects = Number(form.actualMajorDefects)
+    }
+    if (form.actualMinorDefects !== null && form.actualMinorDefects !== undefined && form.actualMinorDefects !== '') {
+      payload.actualMinorDefects = Number(form.actualMinorDefects)
+    }
   }
 
   return payload
@@ -72,6 +86,12 @@ export function fromResponse(ticket) {
     status: ticket.status,
     images: (ticket.images || []).map((img) => img.imageUrl),
     specImages: groupSpecImages(ticket.specImages),
+    aqlLevel: ticket.aqlLevel ?? null,
+    qtySize: ticket.qtySize ?? null,
+    samplingSize: ticket.samplingSize ?? null,
+    actualMajorDefects: ticket.actualMajorDefects ?? null,
+    actualMinorDefects: ticket.actualMinorDefects ?? null,
+    inspectionResult: ticket.inspectionResult ?? null,
     defects: (ticket.defects || []).map((defect) => ({
       _localId: newLocalId(),
       defectId: defect.defectItem?.id ?? null,

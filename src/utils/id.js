@@ -54,5 +54,11 @@ export function emptyFormState() {
     images: [],
     specImages: emptySpecImages(),
     defects: [emptyDefect()],
+    aqlLevel: null,
+    qtySize: null,
+    samplingSize: null,
+    actualMajorDefects: null,
+    actualMinorDefects: null,
+    inspectionResult: null,
   }
 }
