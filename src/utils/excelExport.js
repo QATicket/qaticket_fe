@@ -30,8 +30,24 @@ const GROSS_WEIGHT_CONDITIONAL_REF = 'L16'
 // M3_checkbox (xem Header mapping.md): TRUE nếu chọn AQL 2.5, FALSE nếu AQL 1.5.
 const AQL_LEVEL_CELL = 'M3'
 
+// B3 (dòng "Loại kiểm tra") - ghi thẳng giá trị inspectionStage của ticket.
+const MAIN_REPORT_INSPECTION_STAGE_CELL = 'B3'
+
 const CATEGORY_FONT_SIZE = 13
 const ITEM_FONT_SIZE = 11
+
+// Ô A2 (merge A2:M2) chứa tiêu đề báo cáo, gốc là text tĩnh "Final Inspection
+// Report / BIÊN BẢN KIỂM TRA FINAL" trong template - đổi tên theo
+// inspectionStage của ticket. Giữ nguyên phần đệm khoảng trắng cuối dòng 1
+// (163 ký tự) như trong template gốc vì ô này không có horizontal alignment
+// center - phần đệm là cách căn chỉnh thủ công có sẵn.
+const TITLE_CELL = 'A2'
+const TITLE_LINE1_PADDING = ' '.repeat(163)
+const INSPECTION_STAGE_TITLE_LABELS = {
+  INLINE: { en: 'Inline', vi: 'INLINE' },
+  PRE_FINAL: { en: 'Pre-Final', vi: 'PRE-FINAL' },
+  FINAL: { en: 'Final', vi: 'FINAL' },
+}
 
 // Sheet "Picture Major/Minor Defects" trong template: lưới 4x4 = 16 khung ảnh,
 // mỗi khung là 1 vùng merge 8 dòng x 5 cột, ngay dưới có nhãn "Defect:" và 1 ô
@@ -43,7 +59,7 @@ const PICTURE_BOX_COL_STARTS = [1, 6, 11, 16]
 const PICTURE_BOX_ROW_SPAN = 8
 const PICTURE_BOX_COL_SPAN = 5
 const PICTURE_LABEL_ROW_OFFSET = 8
-const PICTURE_BOX_FIT_RATIO = 0.92 // chừa lề nhỏ quanh ảnh trong khung
+const PICTURE_BOX_FIT_RATIO = 0.96 // chừa lề nhỏ quanh ảnh trong khung, đảm bảo không vượt viền
 const IMAGE_EXT_BY_MIME = { 'image/jpeg': 'jpeg', 'image/png': 'png', 'image/gif': 'gif' }
 
 // Sheet "picture accept": cùng lưới 4x4 khung ảnh (cùng cột A/F/K/P như trên),
@@ -158,9 +174,19 @@ function writeAqlLevelCell(ws, ticket) {
   ws.getCell(AQL_LEVEL_CELL).value = ticket.aqlLevel === '2.5'
 }
 
-function writeInspectionStageCell(ws, ticket) {
+function writeInspectionStageCell(ws, cellAddress, ticket) {
   if (!ticket) return
-  ws.getCell(MEASUREMENT_INSPECTION_STAGE_CELL).value = ticket.inspectionStage ?? ''
+  ws.getCell(cellAddress).value = ticket.inspectionStage ?? ''
+}
+
+// Lấy tên hiển thị từ giá trị ĐÃ GHI ở ô B3 (dòng "Loại kiểm tra") thay vì
+// đọc lại ticket.inspectionStage riêng - đảm bảo tiêu đề luôn khớp đúng với
+// B3, kể cả nếu sau này B3 được ghi/sửa theo cách khác. Vì vậy hàm này phải
+// chạy SAU writeInspectionStageCell(ws, MAIN_REPORT_INSPECTION_STAGE_CELL, ...).
+function writeTitleCell(ws) {
+  const stageValue = ws.getCell(MAIN_REPORT_INSPECTION_STAGE_CELL).value
+  const stage = INSPECTION_STAGE_TITLE_LABELS[stageValue] || INSPECTION_STAGE_TITLE_LABELS.FINAL
+  ws.getCell(TITLE_CELL).value = `${stage.en} Inspection Report${TITLE_LINE1_PADDING}\nBIÊN BẢN KIỂM TRA ${stage.vi}`
 }
 
 function removeGrossWeightConditionalFormatting(ws) {
@@ -216,6 +242,7 @@ function resetDefectRows(ws) {
     for (let col = 1; col <= TOTAL_COLS; col++) {
       ws.getCell(row, col).value = null
     }
+    ws.getRow(row).hidden = false
   }
 
   return { categoryStyle, itemStyle }
@@ -255,7 +282,18 @@ function writeDefectRows(ws, categories) {
     }
   }
 
-  return { lastRow: row - 1, overflow }
+  const lastRow = row - 1
+
+  // Vùng lỗi (27-89) là vùng CỐ ĐỊNH KÍCH THƯỚC - không được insert/delete
+  // dòng thật (sẽ làm lệch công thức SUM ở dòng 90 và cả bảng AQL bên dưới,
+  // xem src/CLAUDE.md). Thay vào đó ẨN các dòng dư không có dữ liệu: Excel
+  // bỏ qua dòng ẩn khi hiển thị/in, nên phần Total/AQL phía dưới nhìn như
+  // "được đưa lên" ngay sau dòng lỗi cuối cùng, không còn khoảng trống to.
+  for (let r = lastRow + 1; r <= LAST_DEFECT_ROW; r++) {
+    ws.getRow(r).hidden = true
+  }
+
+  return { lastRow, overflow }
 }
 
 // Lấy list ảnh theo severity (Major/Minor), gắn kèm tên lỗi (defectItem, hoặc
@@ -350,6 +388,10 @@ function rowHeightPx(points) {
   return Math.round(((points ?? 15) * 96) / 72)
 }
 
+// "contain": giữ nguyên tỉ lệ ảnh gốc (không crop, không méo), scale để vừa
+// lọt bên trong khung - PICTURE_BOX_FIT_RATIO chừa margin nhỏ để chắc chắn
+// không bao giờ vượt quá viền đen của khung dù công thức quy đổi px ở trên
+// chỉ là ước lượng gần đúng (cột quá hẹp như cột P có thể lệch vài px).
 function fitContain(srcWidth, srcHeight, maxWidth, maxHeight) {
   const scale = Math.min(maxWidth / srcWidth, maxHeight / srcHeight, 1)
   return { width: Math.round(srcWidth * scale), height: Math.round(srcHeight * scale) }
@@ -365,8 +407,9 @@ function anchorOffset(startIndex0, offsetPx, unitPx) {
 }
 
 // Điền ảnh + tên lỗi vào sheet "Picture Major/Minor Defects": mỗi ảnh chiếm 1
-// trong 16 khung có sẵn của template, ảnh được fit giữ tỉ lệ (không méo) và
-// canh giữa trong khung. Vượt quá 16 ảnh thì phần dư trả về qua overflow.
+// trong 16 khung có sẵn của template, ảnh được fit giữ tỉ lệ (không méo,
+// không crop) và canh giữa trong khung. Vượt quá 16 ảnh thì phần dư trả về
+// qua overflow.
 async function fillPictureSheet(
   workbook,
   ws,
@@ -412,15 +455,15 @@ async function fillPictureSheet(
       boxWidthPx * PICTURE_BOX_FIT_RATIO,
       boxHeightPx * PICTURE_BOX_FIT_RATIO,
     )
-    const offsetX = (boxWidthPx - width) / 2
-    const offsetY = (boxHeightPx - height) / 2
 
+    // Neo thẳng vào góc trên-trái THẬT của khung (không căn giữa theo chiều
+    // ngang) - khung "picture 4" có cột đầu (P) rất hẹp so với các cột kế
+    // bên (Q/R/S/T); nếu căn giữa, phần margin rơi vào cột hẹp gần như vô
+    // hình khiến ảnh nhìn như bị đẩy hẳn sang cột bên phải. Neo góc trên-trái
+    // luôn là 1 toạ độ nguyên (không cần quy đổi px) nên không bao giờ lệch.
     const imageId = workbook.addImage({ buffer: loaded.buffer, extension: loaded.extension })
     ws.addImage(imageId, {
-      tl: {
-        col: anchorOffset(slot.boxCol - 1, offsetX, colWidthPx(ws.getColumn(slot.boxCol).width)),
-        row: anchorOffset(slot.boxRow - 1, offsetY, rowHeightPx(ws.getRow(slot.boxRow).height)),
-      },
+      tl: { col: slot.boxCol - 1, row: slot.boxRow - 1 },
       ext: { width, height },
     })
   }
@@ -467,7 +510,8 @@ function rowOffsetToAnchor(ws, startRow, endRow, offsetPx) {
 
 // Điền ảnh đo thông số vào vùng merge A4:S55 của sheet "Measurement sheet":
 // chia thành lưới 4 cột, số hàng tự tính theo số ảnh (rows = ceil(count/4)),
-// mỗi ảnh fit giữ tỉ lệ và canh giữa trong khung của nó - không giới hạn số
+// mỗi ảnh fit giữ tỉ lệ, canh giữa theo chiều ngang nhưng canh SÁT TRÊN theo
+// chiều dọc (không canh giữa dọc) trong khung của nó - không giới hạn số
 // ảnh tối đa (khung càng nhiều ảnh thì càng nhỏ, không có khái niệm overflow).
 async function fillMeasurementSheet(workbook, ws, entries, onProgress) {
   if (entries.length === 0) return
@@ -500,7 +544,7 @@ async function fillMeasurementSheet(workbook, ws, entries, onProgress) {
       boxHeightPx * PICTURE_BOX_FIT_RATIO,
     )
     const offsetX = boxLeftPx + (boxWidthPx - width) / 2
-    const offsetY = boxTopPx + (boxHeightPx - height) / 2
+    const offsetY = boxTopPx
 
     const imageId = workbook.addImage({ buffer: loaded.buffer, extension: loaded.extension })
     ws.addImage(imageId, {
@@ -554,6 +598,8 @@ export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistVal
   clearYellowHeaderFill(ws)
   removeGrossWeightConditionalFormatting(ws)
   writeHeaderValues(ws, tickets[0])
+  writeInspectionStageCell(ws, MAIN_REPORT_INSPECTION_STAGE_CELL, tickets[0])
+  writeTitleCell(ws)
   writeAqlLevelCell(ws, tickets[0])
   writeQcChecklist(ws, qcChecklistValues)
 
@@ -581,7 +627,7 @@ export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistVal
 
   const wsMeasurement = workbook.getWorksheet(MEASUREMENT_SHEET)
   if (wsMeasurement) {
-    writeInspectionStageCell(wsMeasurement, tickets[0])
+    writeInspectionStageCell(wsMeasurement, MEASUREMENT_INSPECTION_STAGE_CELL, tickets[0])
     const measurementImages = collectMeasurementImages(tickets)
     await fillMeasurementSheet(workbook, wsMeasurement, measurementImages, onProgress)
   }
