@@ -38,7 +38,7 @@ export default function DefectItem({
   }
 
   return (
-    <div className="bg-slate-50 border-l-4 border-brand-red rounded-md p-4">
+    <div className="bg-slate-50 border-l-4 border-brand-navy rounded-md p-4">
       <div className="flex items-center justify-between mb-3">
         <span className="font-semibold text-slate-700 text-sm">DEFECT #{index + 1}</span>
         <button

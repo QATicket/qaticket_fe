@@ -160,9 +160,9 @@ function formatDateOnly(isoString) {
 // Điền các ô header động (dòng 4-5) từ ticket đầu tiên - xem Header mapping.md.
 function writeHeaderValues(ws, ticket) {
   if (!ticket) return
-  ws.getCell('B4').value = ticket.customer?.name ?? ''
-  ws.getCell('D4').value = ticket.purchaseOrder?.name ?? ''
-  ws.getCell('H4').value = ticket.style?.name ?? ''
+  ws.getCell('B4').value = ticket.customerName ?? ''
+  ws.getCell('D4').value = ticket.poNumber ?? ''
+  ws.getCell('H4').value = ticket.style ?? ''
   ws.getCell('M4').value = formatDateOnly(ticket.createdAt)
   ws.getCell('B5').value = ticket.qtySize ?? ''
   ws.getCell('E5').value = ticket.samplingSize ?? ''

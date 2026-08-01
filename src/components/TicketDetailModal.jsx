@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { getQaTicket } from '../api/qaTickets'
-import { exportTicketPdf } from '../utils/pdfExport'
 import InspectionResultBadge from './InspectionResultBadge'
 
 const STATUS_LABEL = { DRAFT: 'Nháp', SUBMITTED: 'Đã nộp' }
@@ -27,20 +26,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
   const [ticket, setTicket] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [pdfProgress, setPdfProgress] = useState('')
   const [previewUrl, setPreviewUrl] = useState(null)
-
-  async function handleExportPdf() {
-    setPdfProgress('Đang chuẩn bị...')
-    setError('')
-    try {
-      await exportTicketPdf(ticketId, { onProgress: setPdfProgress })
-    } catch (err) {
-      setError(err.message || 'Xuất PDF thất bại')
-    } finally {
-      setPdfProgress('')
-    }
-  }
 
   useEffect(() => {
     setLoading(true)
@@ -59,16 +45,6 @@ export default function TicketDetailModal({ ticketId, onClose }) {
             Chi tiết phiếu {ticket ? ticket.ticketCode : ''}
           </h2>
           <div className="flex items-center gap-3">
-            {ticket && !loading && (
-              <button
-                type="button"
-                onClick={handleExportPdf}
-                disabled={!!pdfProgress}
-                className="text-sm border border-brand-navy text-brand-navy rounded-md px-3 py-1.5 hover:bg-slate-50 disabled:opacity-50"
-              >
-                {pdfProgress ? 'Đang xuất...' : '⭳ Xuất PDF'}
-              </button>
-            )}
             <button
               type="button"
               onClick={onClose}
@@ -82,7 +58,6 @@ export default function TicketDetailModal({ ticketId, onClose }) {
         <div className="px-5 py-4 max-h-[75vh] overflow-y-auto">
           {loading && <p className="text-sm text-slate-400 text-center py-8">Đang tải...</p>}
           {error && <p className="text-sm text-brand-red mb-3">{error}</p>}
-          {pdfProgress && <p className="text-sm text-sky-600 mb-3">{pdfProgress}</p>}
 
           {ticket && !loading && (
             <>
@@ -92,8 +67,9 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                 <InfoRow label="Nhà máy" value={ticket.factory?.name} />
                 <InfoRow label="Chuyền" value={ticket.line?.name} />
                 <InfoRow label="Cụm / Group" value={ticket.group?.name || '—'} />
-                <InfoRow label="PO" value={ticket.purchaseOrder?.name || '—'} />
-                <InfoRow label="Khách hàng" value={ticket.customer?.name} />
+                <InfoRow label="PO" value={ticket.poNumber || '—'} />
+                <InfoRow label="Style (Mã hàng)" value={ticket.style || '—'} />
+                <InfoRow label="Khách hàng" value={ticket.customerName} />
                 <InfoRow label="Loại sản phẩm" value={ticket.garmentType?.name} />
                 <InfoRow label="Khâu kiểm tra" value={ticket.inspectionStage} />
                 <InfoRow label="Sản lượng kiểm tra" value={ticket.inspectedQty} />
@@ -174,7 +150,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                 {(ticket.defects || []).map((defect) => (
                   <div
                     key={defect.id}
-                    className="bg-slate-50 border-l-4 border-brand-red rounded-md p-3"
+                    className="bg-slate-50 border-l-4 border-brand-navy rounded-md p-3"
                   >
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div>

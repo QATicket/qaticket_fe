@@ -24,7 +24,7 @@ export default function DefectsCard({
     <div className="bg-white rounded-xl shadow-sm p-5">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-brand-red text-white text-xs font-bold">
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-brand-navy text-white text-xs font-bold">
             {defects.length}
           </span>
           <h2 className="font-semibold text-slate-700">
@@ -63,6 +63,16 @@ export default function DefectsCard({
           </p>
         )}
       </div>
+
+      {defects.length > 0 && (
+        <button
+          type="button"
+          onClick={addDefect}
+          className="mt-4 w-full border-2 border-brand-navy text-brand-navy text-sm font-semibold rounded-md px-4 py-1.5 hover:bg-slate-50"
+        >
+          + Add Defect
+        </button>
+      )}
     </div>
   )
 }

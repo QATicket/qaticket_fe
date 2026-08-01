@@ -1,12 +1,18 @@
 import { useState } from 'react'
+import ChangePasswordModal from './ChangePasswordModal'
+import InfoDialog from './InfoDialog'
 
 const NAV_ITEMS = [
-  { key: 'list', label: 'Danh sách phiếu' },
   { key: 'form', label: 'Tạo phiếu mới' },
+  { key: 'list', label: 'Danh sách phiếu' },
+  { key: 'dashboard', label: 'Dashboard', disabled: true },
+  { key: 'docs', label: 'Tài liệu tham khảo', disabled: true },
 ]
 
 export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapsed, onToggleCollapsed }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
+  const [changePasswordSuccess, setChangePasswordSuccess] = useState(false)
 
   function handleNavigate(key) {
     onNavigate(key)
@@ -20,12 +26,22 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
-          className="text-sm font-medium text-slate-600 border border-slate-300 rounded-md px-3 py-1.5"
+          title="Menu"
+          className="flex items-center justify-center text-slate-600 border border-slate-300 rounded-md w-9 h-9"
         >
-          Menu
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
         </button>
         <span className="font-semibold text-slate-800 text-sm">Garment QA Checking</span>
-        <span className="w-14" />
+        <span className="w-9" />
       </div>
 
       {/* Mobile overlay */}
@@ -73,20 +89,33 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
         </div>
 
         <nav className="flex-1 py-4 overflow-y-auto">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => handleNavigate(item.key)}
-              className={`w-full text-left px-5 py-3 text-sm font-medium transition-colors ${
-                view === item.key
-                  ? 'bg-brand-navyLight text-white'
-                  : 'text-slate-300 hover:bg-brand-navyLight/60 hover:text-white'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+          {NAV_ITEMS.map((item) =>
+            item.disabled ? (
+              <div
+                key={item.key}
+                title="Tính năng đang phát triển"
+                className="w-full flex items-center justify-between gap-2 px-5 py-3 text-sm font-medium text-slate-500 cursor-not-allowed"
+              >
+                <span>{item.label}</span>
+                <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide bg-white/10 text-slate-400 rounded px-1.5 py-0.5">
+                  Đang phát triển
+                </span>
+              </div>
+            ) : (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => handleNavigate(item.key)}
+                className={`w-full text-left px-5 py-3 text-sm font-medium transition-colors ${
+                  view === item.key
+                    ? 'bg-brand-navyLight text-white'
+                    : 'text-slate-300 hover:bg-brand-navyLight/60 hover:text-white'
+                }`}
+              >
+                {item.label}
+              </button>
+            ),
+          )}
         </nav>
 
         <div className="border-t border-white/10 px-5 py-4 shrink-0">
@@ -99,13 +128,37 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
           )}
           <button
             type="button"
-            onClick={onLogout}
+            onClick={() => setChangePasswordOpen(true)}
             className="mt-3 w-full text-sm text-slate-300 hover:text-white border border-white/20 rounded-md py-1.5 hover:bg-brand-navyLight"
+          >
+            Đổi mật khẩu
+          </button>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="mt-2 w-full text-sm text-slate-300 hover:text-white border border-white/20 rounded-md py-1.5 hover:bg-brand-navyLight"
           >
             Đăng xuất
           </button>
         </div>
       </aside>
+
+      {changePasswordOpen && (
+        <ChangePasswordModal
+          onClose={() => setChangePasswordOpen(false)}
+          onSuccess={() => {
+            setChangePasswordOpen(false)
+            setChangePasswordSuccess(true)
+          }}
+        />
+      )}
+
+      {changePasswordSuccess && (
+        <InfoDialog
+          message="Đổi mật khẩu thành công."
+          onClose={() => setChangePasswordSuccess(false)}
+        />
+      )}
     </>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { listQaTickets, deleteQaTicket, exportQaTicket, unexportQaTicket } from '../api/qaTickets'
-import { getFactories, getLines, getStaff } from '../api/master'
+import { getFactories, getStaff } from '../api/master'
 import { exportTicketPdf } from '../utils/pdfExport'
 import { exportTicketsExcel } from '../utils/excelExport'
 import TicketRowActions from './TicketRowActions'
@@ -21,17 +21,17 @@ export default function TicketListPage({ userInfo, onEdit }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [factoryOptions, setFactoryOptions] = useState([])
-  const [lineOptions, setLineOptions] = useState([])
   const [staffOptions, setStaffOptions] = useState([])
   const [filters, setFilters] = useState({
     factoryId: '',
-    lineId: '',
+    customer: '',
     staffId: '',
     status: '',
     exported: '',
     dateFrom: '',
     dateTo: '',
   })
+  const [customerQuery, setCustomerQuery] = useState('')
   const [busyId, setBusyId] = useState(null)
   const [viewingTicketId, setViewingTicketId] = useState(null)
   const [pdfProgress, setPdfProgress] = useState('')
@@ -52,22 +52,23 @@ export default function TicketListPage({ userInfo, onEdit }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Chuyền phụ thuộc nhà máy - đổi nhà máy thì tải lại danh sách chuyền và
-  // reset lineId (chuyền cũ có thể không thuộc nhà máy mới chọn).
+  // Search theo Customer debounce 600ms để không bắn request mỗi lần gõ phím.
   useEffect(() => {
-    getLines(filters.factoryId || undefined)
-      .then((list) => setLineOptions(list.map((l) => ({ value: l.id, label: l.name }))))
-      .catch(() => {})
-  }, [filters.factoryId])
+    const handle = setTimeout(() => {
+      setFilters((f) => (f.customer === customerQuery ? f : { ...f, customer: customerQuery }))
+    }, 600)
+    return () => clearTimeout(handle)
+  }, [customerQuery])
 
   function updateFilter(key, value) {
-    setFilters((f) => ({ ...f, [key]: value, ...(key === 'factoryId' ? { lineId: '' } : {}) }))
+    setFilters((f) => ({ ...f, [key]: value }))
   }
 
   function resetFilters() {
+    setCustomerQuery('')
     setFilters({
       factoryId: '',
-      lineId: '',
+      customer: '',
       staffId: '',
       status: '',
       exported: '',
@@ -82,7 +83,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
     try {
       const query = {
         factoryId: filters.factoryId || undefined,
-        lineId: filters.lineId || undefined,
+        customer: filters.customer || undefined,
         staffId: filters.staffId || undefined,
         status: filters.status || undefined,
         exported: filters.exported || undefined,
@@ -245,19 +246,14 @@ export default function TicketListPage({ userInfo, onEdit }) {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Chuyền</label>
-              <select
+              <label className="block text-xs font-medium text-slate-500 mb-1">Khách hàng</label>
+              <input
+                type="text"
                 className={FILTER_INPUT_CLASS}
-                value={filters.lineId}
-                onChange={(e) => updateFilter('lineId', e.target.value)}
-              >
-                <option value="">Tất cả</option>
-                {lineOptions.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+                value={customerQuery}
+                onChange={(e) => setCustomerQuery(e.target.value)}
+                placeholder="Tìm theo tên khách hàng"
+              />
             </div>
 
             {isAdmin && (

@@ -8,7 +8,9 @@ export function validateForm(form) {
   if (!form.inspectedQty || form.inspectedQty <= 0) {
     errors.inspectedQty = 'Sản lượng kiểm tra phải lớn hơn 0'
   }
-  if (!form.customerId) errors.customerId = 'Vui lòng chọn Customer'
+  if (!form.customerName || !form.customerName.trim()) {
+    errors.customerName = 'Vui lòng nhập Customer'
+  }
   if (!form.garmentTypeId) errors.garmentTypeId = 'Vui lòng chọn Garment'
 
   if (form.inspectionStage === 'FINAL') {

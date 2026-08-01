@@ -61,7 +61,7 @@ export default function AqlSamplingSection({ form, onChange, errors }) {
       <label className="block text-xs font-medium text-slate-500 mb-2">AQL Sampling Plan</label>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Field label="Order qty" error={errors.qtySize}>
+        <Field label="Order Qty" error={errors.qtySize}>
           <input
             type="number"
             min={1}
@@ -82,10 +82,9 @@ export default function AqlSamplingSection({ form, onChange, errors }) {
             className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy ${
               errors.aqlLevel ? 'border-brand-red' : 'border-slate-300'
             }`}
-            value={form.aqlLevel || ''}
-            onChange={(e) => onChange({ aqlLevel: e.target.value || null })}
+            value={form.aqlLevel || '1.5'}
+            onChange={(e) => onChange({ aqlLevel: e.target.value })}
           >
-            <option value="">-- Chọn --</option>
             {AQL_LEVEL_OPTIONS.map((lvl) => (
               <option key={lvl} value={lvl}>
                 {lvl}

@@ -9,6 +9,13 @@ export async function login(username, password) {
   return data
 }
 
+export async function changePassword(oldPassword, newPassword) {
+  return apiFetch('/api/auth/change-password', {
+    method: 'POST',
+    body: { oldPassword, newPassword },
+  })
+}
+
 export async function logout() {
   const refreshToken = tokenStorage.getRefreshToken()
   try {

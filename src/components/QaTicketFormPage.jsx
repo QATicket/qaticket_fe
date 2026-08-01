@@ -7,8 +7,6 @@ import {
   getFactories,
   getLines,
   getGroups,
-  getCustomers,
-  getStyles,
   getGarmentTypes,
   getGarmentLocations,
   getDefectItems,
@@ -38,8 +36,6 @@ export default function QaTicketFormPage({ userInfo, ticketId, onBackToList }) {
   const [factoryOptions, setFactoryOptions] = useState([])
   const [lineOptions, setLineOptions] = useState([])
   const [groupOptions, setGroupOptions] = useState([])
-  const [customerOptions, setCustomerOptions] = useState([])
-  const [styleOptions, setStyleOptions] = useState([])
   const [garmentTypeOptions, setGarmentTypeOptions] = useState([])
   const [garmentLocationOptions, setGarmentLocationOptions] = useState([])
   const [defectItemOptions, setDefectItemOptions] = useState([])
@@ -53,8 +49,6 @@ export default function QaTicketFormPage({ userInfo, ticketId, onBackToList }) {
   // Load static master data once
   useEffect(() => {
     getFactories().then((list) => setFactoryOptions(toOptions(list))).catch(() => {})
-    getCustomers().then((list) => setCustomerOptions(toOptions(list))).catch(() => {})
-    getStyles().then((list) => setStyleOptions(toOptions(list))).catch(() => {})
     getGarmentTypes().then((list) => setGarmentTypeOptions(toOptions(list))).catch(() => {})
     getDefectItems()
       .then((list) =>
@@ -243,8 +237,6 @@ export default function QaTicketFormPage({ userInfo, ticketId, onBackToList }) {
             factoryOptions={factoryOptions}
             lineOptions={lineOptions}
             groupOptions={groupOptions}
-            customerOptions={customerOptions}
-            styleOptions={styleOptions}
             garmentTypeOptions={garmentTypeOptions}
           />
 

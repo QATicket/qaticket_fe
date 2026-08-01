@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function TicketRowActions({
   ticket,
@@ -12,15 +13,46 @@ export default function TicketRowActions({
   onDelete,
 }) {
   const [open, setOpen] = useState(false)
-  const containerRef = useRef(null)
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
+  const buttonRef = useRef(null)
+  const menuRef = useRef(null)
 
   useEffect(() => {
     function handleClickOutside(e) {
-      if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false)
+      if (
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target) &&
+        menuRef.current &&
+        !menuRef.current.contains(e.target)
+      ) {
+        setOpen(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useLayoutEffect(() => {
+    if (!open) return
+
+    function updatePosition() {
+      const rect = buttonRef.current?.getBoundingClientRect()
+      if (!rect) return
+      const menuWidth = 144 // w-36
+      setMenuPos({
+        top: rect.bottom + window.scrollY + 4,
+        left: Math.max(8, rect.right + window.scrollX - menuWidth),
+      })
+    }
+
+    updatePosition()
+    window.addEventListener('scroll', updatePosition, true)
+    window.addEventListener('resize', updatePosition)
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true)
+      window.removeEventListener('resize', updatePosition)
+    }
+  }, [open])
 
   function runAndClose(action) {
     setOpen(false)
@@ -28,8 +60,9 @@ export default function TicketRowActions({
   }
 
   return (
-    <div className="relative inline-block" ref={containerRef}>
+    <div className="relative inline-block">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         title="Thao tác"
@@ -38,62 +71,68 @@ export default function TicketRowActions({
         ⋮
       </button>
 
-      {open && (
-        <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-slate-200 rounded-md shadow-lg z-10 py-1">
-          <button
-            type="button"
-            onClick={() => runAndClose(onView)}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{ position: 'absolute', top: menuPos.top, left: menuPos.left }}
+            className="w-36 bg-white border border-slate-200 rounded-md shadow-lg z-50 py-1"
           >
-            Xem chi tiết
-          </button>
-          <button
-            type="button"
-            onClick={() => runAndClose(onEdit)}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
-          >
-            Sửa
-          </button>
-          <button
-            type="button"
-            disabled={busy || (ticket.exported && !isAdmin)}
-            title={ticket.exported && !isAdmin ? 'Phiếu đã xuất, không thể xuất lại' : undefined}
-            onClick={() => runAndClose(onExportPdf)}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
-          >
-            Xuất PDF
-          </button>
-          <button
-            type="button"
-            disabled={busy || (ticket.exported && !isAdmin)}
-            title={ticket.exported && !isAdmin ? 'Phiếu đã xuất, không thể xuất lại' : undefined}
-            onClick={() => runAndClose(onExportExcel)}
-            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
-          >
-            Xuất Excel
-          </button>
-          {isAdmin && ticket.exported && (
             <button
               type="button"
-              disabled={busy}
-              onClick={() => runAndClose(onUnexport)}
-              className="w-full text-left px-3 py-2 text-sm text-sky-600 hover:bg-sky-50 disabled:opacity-50"
+              onClick={() => runAndClose(onView)}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
             >
-              Cho phép xuất lại
+              Xem chi tiết
             </button>
-          )}
-          {ticket.status === 'DRAFT' && (
             <button
               type="button"
-              disabled={busy}
-              onClick={() => runAndClose(onDelete)}
-              className="w-full text-left px-3 py-2 text-sm text-brand-red hover:bg-red-50 disabled:opacity-50"
+              onClick={() => runAndClose(onEdit)}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
             >
-              Xoá
+              Sửa
             </button>
-          )}
-        </div>
-      )}
+            <button
+              type="button"
+              disabled={busy || (ticket.exported && !isAdmin)}
+              title={ticket.exported && !isAdmin ? 'Phiếu đã xuất, không thể xuất lại' : undefined}
+              onClick={() => runAndClose(onExportPdf)}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
+            >
+              Xuất PDF
+            </button>
+            <button
+              type="button"
+              disabled={busy || (ticket.exported && !isAdmin)}
+              title={ticket.exported && !isAdmin ? 'Phiếu đã xuất, không thể xuất lại' : undefined}
+              onClick={() => runAndClose(onExportExcel)}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
+            >
+              Xuất Excel
+            </button>
+            {isAdmin && ticket.exported && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => runAndClose(onUnexport)}
+                className="w-full text-left px-3 py-2 text-sm text-sky-600 hover:bg-sky-50 disabled:opacity-50"
+              >
+                Cho phép xuất lại
+              </button>
+            )}
+            {ticket.status === 'DRAFT' && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => runAndClose(onDelete)}
+                className="w-full text-left px-3 py-2 text-sm text-brand-red hover:bg-red-50 disabled:opacity-50"
+              >
+                Xoá
+              </button>
+            )}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

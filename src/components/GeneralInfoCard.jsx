@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import SearchableSelect from './SearchableSelect'
 import NumberStepper from './NumberStepper'
 import AddImageTile, { CameraIcon, GalleryIcon } from './AddImageTile'
 import ImageEditorModal from './ImageEditorModal'
 import AqlSamplingSection from './AqlSamplingSection'
-import { searchPurchaseOrders } from '../api/master'
 import { uploadImages } from '../api/uploads'
 import { blobToFile } from '../utils/image'
 
@@ -22,26 +21,13 @@ export default function GeneralInfoCard({
   factoryOptions,
   lineOptions,
   groupOptions,
-  customerOptions,
-  styleOptions,
   garmentTypeOptions,
 }) {
-  const [poOptions, setPoOptions] = useState([])
-  const [poQuery, setPoQuery] = useState(form.poLabel || '')
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [pendingCameraFile, setPendingCameraFile] = useState(null)
   const cameraInputRef = useRef(null)
   const galleryInputRef = useRef(null)
-
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      searchPurchaseOrders(poQuery)
-        .then((list) => setPoOptions(list.map((po) => ({ value: po.id, label: po.poCode }))))
-        .catch(() => setPoOptions([]))
-    }, 300)
-    return () => clearTimeout(handle)
-  }, [poQuery])
 
   async function handleFilesSelected(fileList) {
     const files = Array.from(fileList || [])
@@ -125,26 +111,22 @@ export default function GeneralInfoCard({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Field label="PO">
-          <SearchableSelect
-            options={poOptions}
-            value={form.poId}
-            onChange={(v) => onChange({ poId: v })}
-            placeholder="Tìm PO (gõ để tìm)"
-            allowFreeText
-            freeTextValue={poQuery}
-            onFreeTextChange={(text) => {
-              setPoQuery(text)
-              onChange({ poId: null })
-            }}
+          <input
+            type="text"
+            className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy"
+            value={form.poNumber || ''}
+            onChange={(e) => onChange({ poNumber: e.target.value })}
+            placeholder="Nhập số PO"
           />
         </Field>
 
         <Field label="Style (Mã hàng)">
-          <SearchableSelect
-            options={styleOptions}
-            value={form.styleId}
-            onChange={(v) => onChange({ styleId: v })}
-            placeholder="Chọn style"
+          <input
+            type="text"
+            className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy"
+            value={form.style || ''}
+            onChange={(e) => onChange({ style: e.target.value })}
+            placeholder="Nhập mã hàng (style)"
           />
         </Field>
 
@@ -162,14 +144,19 @@ export default function GeneralInfoCard({
           )}
         </Field>
 
-        <Field label="Customer (Khách hàng)" error={errors.customerId}>
-          <SearchableSelect
-            options={customerOptions}
-            value={form.customerId}
-            onChange={(v) => onChange({ customerId: v })}
-            placeholder="Chọn khách hàng"
-            error={errors.customerId}
+        <Field label="Customer (Khách hàng)">
+          <input
+            type="text"
+            className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy ${
+              errors.customerName ? 'border-brand-red' : 'border-slate-300'
+            }`}
+            value={form.customerName || ''}
+            onChange={(e) => onChange({ customerName: e.target.value })}
+            placeholder="Nhập tên khách hàng"
           />
+          {errors.customerName && (
+            <p className="text-xs text-brand-red mt-1">{errors.customerName}</p>
+          )}
         </Field>
 
         <Field label="Garment (Loại sản phẩm)" error={errors.garmentTypeId}>
