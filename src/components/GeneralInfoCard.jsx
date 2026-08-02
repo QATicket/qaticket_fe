@@ -8,11 +8,16 @@ import { uploadImages } from '../api/uploads'
 import { blobToFile } from '../utils/image'
 
 const STAGE_OPTIONS = [
+  { value: 'FIRST_OUTPUT', label: 'First Output' },
   { value: 'INLINE', label: 'Inline' },
   { value: 'ENDLINE', label: 'Endline' },
+  { value: 'PREFINAL', label: 'Prefinal' },
   { value: 'FINAL', label: 'Final' },
-  { value: 'INPUT', label: 'Input' },
+  { value: 'PACKING', label: 'Packing' },
 ]
+
+// Prefinal dùng chung mẫu báo cáo (BB_PREFINAL_FINAL) và logic AQL/Spec Images với Final.
+const AQL_STAGES = ['FINAL', 'PREFINAL']
 
 export default function GeneralInfoCard({
   form,
@@ -135,9 +140,9 @@ export default function GeneralInfoCard({
             value={form.inspectedQty}
             onChange={(v) => onChange({ inspectedQty: v })}
             error={errors.inspectedQty}
-            disabled={form.inspectionStage === 'FINAL' && !!form.samplingSize}
+            disabled={AQL_STAGES.includes(form.inspectionStage) && !!form.samplingSize}
           />
-          {form.inspectionStage === 'FINAL' && !!form.samplingSize && (
+          {AQL_STAGES.includes(form.inspectionStage) && !!form.samplingSize && (
             <p className="text-[11px] text-slate-400 mt-1">
               Tự động lấy theo Sampling size (AQL)
             </p>
@@ -244,7 +249,7 @@ export default function GeneralInfoCard({
         />
       )}
 
-      {form.inspectionStage === 'FINAL' && (
+      {AQL_STAGES.includes(form.inspectionStage) && (
         <div className="mt-4 pt-4 border-t border-slate-200">
           <label className="block text-xs font-medium text-slate-500 mb-2">
             Upload hình ảnh duyệt (Spec Images)

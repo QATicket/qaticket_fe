@@ -13,7 +13,7 @@ export function validateForm(form) {
   }
   if (!form.garmentTypeId) errors.garmentTypeId = 'Vui lòng chọn Garment'
 
-  if (form.inspectionStage === 'FINAL') {
+  if (form.inspectionStage === 'FINAL' || form.inspectionStage === 'PREFINAL') {
     const hasAqlLevel = !!form.aqlLevel
     const hasQtySize = form.qtySize !== null && form.qtySize !== undefined && form.qtySize !== ''
     if (hasAqlLevel && !hasQtySize) errors.qtySize = 'Vui lòng nhập Order qty khi đã chọn AQL Level'

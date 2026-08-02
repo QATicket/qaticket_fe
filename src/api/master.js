@@ -1,6 +1,7 @@
 import { apiFetch } from './http'
 
-export const getStaff = () => apiFetch('/api/master/staff')
+export const getStaff = (params) => apiFetch('/api/master/staff', { params })
+export const getAllStaff = () => apiFetch('/api/master/staff/all')
 export const getFactories = () => apiFetch('/api/master/factories')
 export const getLines = (factoryId) => apiFetch('/api/master/lines', { params: { factoryId } })
 export const getGroups = (lineId) => apiFetch('/api/master/groups', { params: { lineId } })

@@ -5,11 +5,13 @@ import InfoDialog from './InfoDialog'
 const NAV_ITEMS = [
   { key: 'form', label: 'Tạo phiếu mới' },
   { key: 'list', label: 'Danh sách phiếu' },
-  { key: 'dashboard', label: 'Dashboard', disabled: true },
+  { key: 'staff', label: 'Quản lý nhân viên', adminOnly: true },
+  { key: 'dashboard', label: 'Dashboard' },
   { key: 'docs', label: 'Tài liệu tham khảo', disabled: true },
 ]
 
 export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapsed, onToggleCollapsed }) {
+  const isAdmin = userInfo?.role === 'ADMIN'
   const [mobileOpen, setMobileOpen] = useState(false)
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [changePasswordSuccess, setChangePasswordSuccess] = useState(false)
@@ -58,9 +60,18 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
           type="button"
           onClick={onToggleCollapsed}
           title="Hiện menu"
-          className="hidden sm:flex items-center justify-center fixed top-4 left-4 z-40 w-9 h-9 text-base font-medium bg-brand-navy text-white rounded-full hover:bg-brand-navyDark"
+          className="hidden sm:flex items-center justify-center fixed top-4 left-4 z-40 w-9 h-9 bg-brand-navy text-white rounded-full hover:bg-brand-navyDark"
         >
-          →
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={3}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
         </button>
       )}
 
@@ -82,14 +93,23 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
             type="button"
             onClick={onToggleCollapsed}
             title="Ẩn menu"
-            className="hidden sm:flex items-center justify-center text-base font-medium text-slate-300 hover:text-white border border-white/20 rounded-full w-7 h-7 hover:bg-brand-navyLight shrink-0"
+            className="hidden sm:flex items-center justify-center text-slate-300 hover:text-white border border-white/20 rounded-full w-7 h-7 hover:bg-brand-navyLight shrink-0"
           >
-            ←
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={3}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
           </button>
         </div>
 
         <nav className="flex-1 py-4 overflow-y-auto">
-          {NAV_ITEMS.map((item) =>
+          {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map((item) =>
             item.disabled ? (
               <div
                 key={item.key}

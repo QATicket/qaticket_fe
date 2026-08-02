@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import LoginPage from './components/LoginPage'
 import QaTicketFormPage from './components/QaTicketFormPage'
 import TicketListPage from './components/TicketListPage'
+import StaffManagementPage from './components/StaffManagementPage'
+import QaDashboard from './components/QaDashboard'
 import Sidebar from './components/Sidebar'
 import WorkshopWatermark from './components/WorkshopWatermark'
 import { tokenStorage, warmUpBackend } from './api/http'
@@ -73,6 +75,10 @@ export default function App() {
             ticketId={editingTicketId}
             onBackToList={() => setView('list')}
           />
+        ) : view === 'staff' ? (
+          <StaffManagementPage />
+        ) : view === 'dashboard' ? (
+          <QaDashboard userInfo={userInfo} />
         ) : (
           <TicketListPage
             userInfo={userInfo}

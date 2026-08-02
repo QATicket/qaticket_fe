@@ -78,7 +78,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                   label="Ngày tạo"
                   value={ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('vi-VN') : '—'}
                 />
-                {ticket.inspectionStage === 'FINAL' && (
+                {(ticket.inspectionStage === 'FINAL' || ticket.inspectionStage === 'PREFINAL') && (
                   <>
                     <InfoRow label="AQL Level" value={ticket.aqlLevel ?? '—'} />
                     <InfoRow label="Order qty" value={ticket.qtySize ?? '—'} />

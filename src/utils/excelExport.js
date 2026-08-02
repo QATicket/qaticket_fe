@@ -44,9 +44,12 @@ const ITEM_FONT_SIZE = 11
 const TITLE_CELL = 'A2'
 const TITLE_LINE1_PADDING = ' '.repeat(163)
 const INSPECTION_STAGE_TITLE_LABELS = {
+  FIRST_OUTPUT: { en: 'First Output', vi: 'FIRST OUTPUT' },
   INLINE: { en: 'Inline', vi: 'INLINE' },
-  PRE_FINAL: { en: 'Pre-Final', vi: 'PRE-FINAL' },
+  ENDLINE: { en: 'Endline', vi: 'ENDLINE' },
+  PREFINAL: { en: 'Pre-Final', vi: 'PRE-FINAL' },
   FINAL: { en: 'Final', vi: 'FINAL' },
+  PACKING: { en: 'Packing', vi: 'PACKING' },
 }
 
 // Sheet "Picture Major/Minor Defects" trong template: lưới 4x4 = 16 khung ảnh,
@@ -155,6 +158,31 @@ function formatDateOnly(isoString) {
   const dd = String(d.getDate()).padStart(2, '0')
   const mm = String(d.getMonth() + 1).padStart(2, '0')
   return `${dd}/${mm}/${d.getFullYear()}`
+}
+
+// dd.mm.yyyy - ngày xuất file, dùng cho tên file tải về (xem buildExportFilename).
+function formatExportDate(date) {
+  const dd = String(date.getDate()).padStart(2, '0')
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  return `${dd}.${mm}.${date.getFullYear()}`
+}
+
+// PO giờ là free-text (xem GeneralInfoCard.jsx) nên có thể chứa ký tự không hợp lệ
+// trong tên file (Windows cấm \ / : * ? " < > |) - thay các ký tự đó bằng "-".
+function sanitizeFilenamePart(text) {
+  return String(text || '').trim().replace(/[\\/:*?"<>|]+/g, '-')
+}
+
+// [dd.mm.yyyy]-[KHÂU KIỂM]-[PO] - xem yêu cầu đặt tên file export.
+function buildExportFilename(tickets) {
+  const firstTicket = tickets[0]
+  const datePart = formatExportDate(new Date())
+  const stagePart = sanitizeFilenamePart(firstTicket?.inspectionStage) || 'UNKNOWN'
+  const poPart =
+    tickets.length > 1
+      ? tickets.map((t) => sanitizeFilenamePart(t.poNumber || t.ticketCode)).join('-')
+      : sanitizeFilenamePart(firstTicket?.poNumber || firstTicket?.ticketCode)
+  return `[${datePart}]-[${stagePart}]-[${poPart}].xlsx`
 }
 
 // Điền các ô header động (dòng 4-5) từ ticket đầu tiên - xem Header mapping.md.
@@ -641,12 +669,7 @@ export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistVal
   onProgress?.('Đang tạo file Excel...')
   const buffer = await workbook.xlsx.writeBuffer()
 
-  const firstTicket = tickets[0]
-  const filename =
-    ids.length > 1
-      ? `BB_PREFINAL_FINAL_${ids.join('-')}.xlsx`
-      : `BB_PREFINAL_FINAL_${firstTicket?.ticketCode || ids[0]}.xlsx`
-  downloadBlob(buffer, filename)
+  downloadBlob(buffer, buildExportFilename(tickets))
 
   return { overflow, imageOverflow }
 }

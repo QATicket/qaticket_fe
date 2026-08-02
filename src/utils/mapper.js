@@ -39,8 +39,8 @@ export function toPayload(form) {
     })),
   }
 
-  // specImages chỉ áp dụng cho FINAL; stage khác không gửi field này lên (BE 400 nếu mảng có phần tử)
-  if (form.inspectionStage === 'FINAL') {
+  // specImages chỉ áp dụng cho FINAL/PREFINAL; stage khác không gửi field này lên (BE 400 nếu mảng có phần tử)
+  if (form.inspectionStage === 'FINAL' || form.inspectionStage === 'PREFINAL') {
     const specImages = []
     SPEC_IMAGE_TYPES.forEach((type) => {
       ;(form.specImages?.[type] || []).forEach((url) => specImages.push({ type, imageUrl: url }))
@@ -49,9 +49,9 @@ export function toPayload(form) {
     ;(form.specImages?.OTHER || []).forEach((url) => specImages.push({ type: null, imageUrl: url }))
     payload.specImages = specImages
 
-    // Field AQL chỉ hợp lệ khi stage FINAL, BE trả 400 nếu gửi lúc stage khác -> không set field
-    // khi không phải FINAL. aqlLevel/qtySize phải đi cùng cặp; actual defects gửi độc lập, có thể
-    // để trống nếu chưa kiểm xong.
+    // Field AQL chỉ hợp lệ khi stage FINAL/PREFINAL, BE trả 400 nếu gửi lúc stage khác -> không
+    // set field khi không phải 2 stage này. aqlLevel/qtySize phải đi cùng cặp; actual defects
+    // gửi độc lập, có thể để trống nếu chưa kiểm xong.
     if (form.aqlLevel && form.qtySize) {
       payload.aqlLevel = form.aqlLevel
       payload.qtySize = form.qtySize

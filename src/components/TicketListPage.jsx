@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { listQaTickets, deleteQaTicket, exportQaTicket, unexportQaTicket } from '../api/qaTickets'
-import { getFactories, getStaff } from '../api/master'
+import { getFactories, getAllStaff } from '../api/master'
 import { exportTicketPdf } from '../utils/pdfExport'
 import { exportTicketsExcel } from '../utils/excelExport'
 import TicketRowActions from './TicketRowActions'
@@ -37,6 +37,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
   const [pdfProgress, setPdfProgress] = useState('')
   const [excelProgress, setExcelProgress] = useState('')
   const [qcChecklistTicket, setQcChecklistTicket] = useState(null)
+  const [qcChecklistMode, setQcChecklistMode] = useState('excel')
 
   useEffect(() => {
     getFactories()
@@ -45,7 +46,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
     // Nhân viên thường chỉ xem được phiếu của mình (BE tự scope), nên không
     // cần filter theo nhân viên - chỉ admin mới thấy/lọc được phiếu của tất cả.
     if (isAdmin) {
-      getStaff()
+      getAllStaff()
         .then((list) => setStaffOptions(list.map((s) => ({ value: s.id, label: s.fullName }))))
         .catch(() => {})
     }
@@ -136,23 +137,17 @@ export default function TicketListPage({ userInfo, onEdit }) {
     }
   }
 
-  async function handleExportPdf(ticket) {
+  // PDF cũng cần v/x Materials thật (không phải luôn mặc định "v") nên đi qua
+  // QcChecklistModal giống flow Excel - qcChecklistMode phân biệt export nào
+  // sẽ chạy khi người dùng xác nhận (xem handleConfirmQcChecklist).
+  function handleExportPdf(ticket) {
     if (ticket.exported && !isAdmin) {
       setError('Phiếu này đã được xuất, không thể xuất lại')
       return
     }
-    setBusyId(ticket.id)
-    setPdfProgress('Đang chuẩn bị...')
     setError('')
-    try {
-      await exportTicketPdf(ticket.id, { onProgress: setPdfProgress })
-      await markExported(ticket)
-    } catch (err) {
-      setError(err.message || 'Xuất PDF thất bại')
-    } finally {
-      setBusyId(null)
-      setPdfProgress('')
-    }
+    setQcChecklistMode('pdf')
+    setQcChecklistTicket(ticket)
   }
 
   function handleExportExcel(ticket) {
@@ -161,15 +156,32 @@ export default function TicketListPage({ userInfo, onEdit }) {
       return
     }
     setError('')
+    setQcChecklistMode('excel')
     setQcChecklistTicket(ticket)
   }
 
   async function handleConfirmQcChecklist(qcChecklistValues) {
     const ticket = qcChecklistTicket
+    const mode = qcChecklistMode
     setQcChecklistTicket(null)
     setBusyId(ticket.id)
-    setExcelProgress('Đang chuẩn bị...')
     setError('')
+
+    if (mode === 'pdf') {
+      setPdfProgress('Đang chuẩn bị...')
+      try {
+        await exportTicketPdf(ticket.id, { onProgress: setPdfProgress, qcChecklistValues })
+        await markExported(ticket)
+      } catch (err) {
+        setError(err.message || 'Xuất PDF thất bại')
+      } finally {
+        setBusyId(null)
+        setPdfProgress('')
+      }
+      return
+    }
+
+    setExcelProgress('Đang chuẩn bị...')
     try {
       const { overflow, imageOverflow } = await exportTicketsExcel(ticket.id, {
         onProgress: setExcelProgress,
@@ -436,6 +448,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
 
       {qcChecklistTicket && (
         <QcChecklistModal
+          exportLabel={qcChecklistMode === 'pdf' ? 'PDF' : 'Excel'}
           onConfirm={handleConfirmQcChecklist}
           onCancel={() => setQcChecklistTicket(null)}
         />
