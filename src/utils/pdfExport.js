@@ -2,13 +2,14 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { getQaTicket } from '../api/qaTickets'
 import { QC_CHECKLIST_GROUPS, defaultQcChecklistValues } from './qcChecklist'
+import { buildExportFilename } from './excelExport'
 
 // Layout PDF theo mẫu công ty (NHA BE CORPORATION): 5 phần nối tiếp trong 1 file,
 // mỗi phần bắt đầu 1 trang mới, đều lặp lại khối header giống nhau (build bằng
 // drawHeader). Cấu trúc bảng/nhóm lấy đúng dữ liệu thật đang dùng cho excelExport.js
 // (cùng nguồn ticket, cùng QC_CHECKLIST_GROUPS) - KHÔNG bịa field mà BE chưa trả
 // (vd Supplier, Cutting/Sewing/Packing Qty, MDA#, QR code, version/khoá...).
-const STATUS_LABEL = { DRAFT: 'Nháp', SUBMITTED: 'Đã nộp' }
+const STATUS_LABEL = { DRAFT: 'Draft', SUBMITTED: 'Submitted' }
 const STAGE_LABEL = {
   FIRST_OUTPUT: 'First Output',
   INLINE: 'Inline',
@@ -18,11 +19,15 @@ const STAGE_LABEL = {
   PACKING: 'Packing',
 }
 const SPEC_IMAGE_TYPE_LABELS = {
-  APPROVED_SAMPLE: 'Mẫu duyệt (Approved Sample)',
-  SIZE_SPEC: 'Bảng thông số kích thước',
-  PACKING: 'Quy cách đóng thùng/Bao bì',
-  HANGTAG_LABEL: 'Thẻ treo & Nhãn hiệu',
+  APPROVED_SAMPLE: 'Approved Sample',
+  SIZE_SPEC: 'Size Spec Sheet',
+  PACKING: 'Packing Specification',
+  HANGTAG_LABEL: 'Hangtag & Label',
 }
+// Chỉ Pre-Final/Final mới có bảng AQL + ảnh Spec Images duyệt (xem AQL_STAGES
+// trong GeneralInfoCard.jsx) - các stage khác (Inline, Endline...) không cần
+// trang "Picture Accept" trong PDF xuất ra.
+const AQL_STAGES = ['FINAL', 'PREFINAL']
 
 const PAGE_MARGIN = 10
 const PAGE_WIDTH = 210
@@ -83,7 +88,7 @@ async function loadImageAsJpegDataUrl(url, maxDim = 900) {
     const img = await new Promise((resolve, reject) => {
       const el = new Image()
       el.onload = () => resolve(el)
-      el.onerror = () => reject(new Error('Không đọc được ảnh'))
+      el.onerror = () => reject(new Error('Failed to read image'))
       el.src = objectUrl
     })
 
@@ -135,18 +140,18 @@ function drawHeader(doc, ticket, sheetTitle, { showAqlLine = false, extraRow = n
   doc.setFont(FONT_FAMILY, 'normal')
   doc.setFontSize(9)
   doc.setTextColor(90)
-  doc.text(`Trạng thái: ${STATUS_LABEL[ticket.status] || ticket.status || '—'}`, PAGE_WIDTH - PAGE_MARGIN, y + 4, {
+  doc.text(`Status: ${STATUS_LABEL[ticket.status] || ticket.status || '—'}`, PAGE_WIDTH - PAGE_MARGIN, y + 4, {
     align: 'right',
   })
-  doc.text(`Ngày tạo: ${formatDateOnly(ticket.createdAt)}`, PAGE_WIDTH - PAGE_MARGIN, y + 9, { align: 'right' })
+  doc.text(`Created: ${formatDateOnly(ticket.createdAt)}`, PAGE_WIDTH - PAGE_MARGIN, y + 9, { align: 'right' })
 
   y += 16
 
   const rows = [
-    ['Customer (KH)', ticket.customerName || '—', 'Style (Mã hàng)', ticket.style || '—'],
-    ['PO', ticket.poNumber || '—', 'SL thực kiểm', ticket.inspectedQty ?? '—'],
+    ['Customer', ticket.customerName || '—', 'Style', ticket.style || '—'],
+    ['PO', ticket.poNumber || '—', 'Inspected Qty', ticket.inspectedQty ?? '—'],
     [
-      'Khâu kiểm tra',
+      'Inspection Stage',
       STAGE_LABEL[ticket.inspectionStage] || ticket.inspectionStage || '—',
       'Sample size',
       ticket.qtySize ?? '—',
@@ -242,8 +247,8 @@ function groupDefectsForPdf(ticket) {
   const categories = new Map()
   for (const d of ticket.defects || []) {
     const categoryId = d.defect?.id ?? d.defectItem?.id ?? 'unknown'
-    const categoryName = d.defect?.name || d.defectItem?.name || 'Khác'
-    const itemName = d.defectItem?.name || d.defect?.name || 'Lỗi'
+    const categoryName = d.defect?.name || d.defectItem?.name || 'Other'
+    const itemName = d.defectItem?.name || d.defect?.name || 'Defect'
     const severity = d.severity === 'MAJOR' ? 'MAJOR' : 'MINOR'
     const qty = (d.locations || []).reduce((sum, loc) => sum + (loc.quantity || 0), 0)
     if (!categories.has(categoryId)) categories.set(categoryId, { name: categoryName, items: [] })
@@ -262,7 +267,7 @@ function drawInspectionPointsSection(doc, startY, ticket) {
   const categories = groupDefectsForPdf(ticket)
   const body = []
   if (categories.size === 0) {
-    body.push([{ content: 'Không có defect nào', colSpan: 4, styles: { fontStyle: 'normal', textColor: 130 } }])
+    body.push([{ content: 'No defects', colSpan: 4, styles: { fontStyle: 'normal', textColor: 130 } }])
   }
   for (const category of categories.values()) {
     body.push([{ content: category.name, colSpan: 4, styles: { fontStyle: 'bold', fillColor: [254, 226, 226] } }])
@@ -279,7 +284,7 @@ function drawInspectionPointsSection(doc, startY, ticket) {
   autoTable(doc, {
     startY: tableStartY,
     margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
-    head: [['Tên điểm kiểm tra', 'Major', 'Minor', 'Remark']],
+    head: [['Inspection Point Name', 'Major', 'Minor', 'Remark']],
     body,
     theme: 'grid',
     styles: {
@@ -305,7 +310,7 @@ function collectDefectImagesForPdf(ticket, severity) {
   for (const d of ticket.defects || []) {
     const defectSeverity = d.severity === 'MAJOR' ? 'MAJOR' : 'MINOR'
     if (defectSeverity !== severity) continue
-    const name = d.defectItem?.name || d.defect?.name || 'Khác'
+    const name = d.defectItem?.name || d.defect?.name || 'Other'
     for (const loc of d.locations || []) {
       for (const img of loc.images || []) {
         if (img.imageUrl) entries.push({ name, imageUrl: img.imageUrl })
@@ -318,19 +323,14 @@ function collectDefectImagesForPdf(ticket, severity) {
 // Trang lưới ảnh dùng chung cho Measurement sheet / Picture Accept / Picture
 // Major Defects / Picture Minor Defects: header giống nhau (chỉ khác tiêu đề +
 // màu), ảnh fit giữ tỉ lệ trong khung viền, tự sang trang mới khi hết chỗ.
+// Không có ảnh nào -> bỏ hẳn trang này (không thêm trang trống chỉ để báo "no data").
 async function drawPictureGridPage(doc, ticket, sheetTitle, entries, options = {}) {
-  const { titleColor, captionOf, emptyMessage, onProgress, progressPrefix, cols = 2, boxSize = 78 } = options
+  if (entries.length === 0) return
+
+  const { titleColor, captionOf, onProgress, progressPrefix, cols = 2, boxSize = 78 } = options
 
   doc.addPage()
   let y = drawHeader(doc, ticket, sheetTitle, { titleColor })
-
-  if (entries.length === 0) {
-    doc.setFont(FONT_FAMILY, 'normal')
-    doc.setFontSize(9.5)
-    doc.setTextColor(130)
-    doc.text(emptyMessage || 'Không có ảnh', PAGE_MARGIN, y + 4)
-    return
-  }
 
   const colWidth = (CONTENT_WIDTH - PIC_GAP * (cols - 1)) / cols
   const captionH = captionOf ? 6 : 2
@@ -342,7 +342,7 @@ async function drawPictureGridPage(doc, ticket, sheetTitle, entries, options = {
       y = drawHeader(doc, ticket, sheetTitle, { titleColor })
     }
     const x = PAGE_MARGIN + col * (colWidth + PIC_GAP)
-    onProgress?.(`${progressPrefix || 'Đang xử lý ảnh'} ${i + 1}/${entries.length}...`)
+    onProgress?.(`${progressPrefix || 'Processing image'} ${i + 1}/${entries.length}...`)
 
     doc.setDrawColor(180)
     doc.setLineWidth(BORDER_WIDTH)
@@ -359,11 +359,11 @@ async function drawPictureGridPage(doc, ticket, sheetTitle, entries, options = {
       }
       doc.addImage(dataUrl, 'JPEG', x + (colWidth - w) / 2, y + (boxSize - h) / 2, w, h)
     } catch (err) {
-      console.error(`[pdfExport] Không tải được ảnh: ${entries[i].imageUrl}`, err)
+      console.error(`[pdfExport] Failed to load image: ${entries[i].imageUrl}`, err)
       doc.setFont(FONT_FAMILY, 'normal')
       doc.setFontSize(8)
       doc.setTextColor(150)
-      doc.text('Không tải được ảnh', x + colWidth / 2, y + boxSize / 2, { align: 'center' })
+      doc.text('Image failed to load', x + colWidth / 2, y + boxSize / 2, { align: 'center' })
     }
 
     const caption = captionOf ? captionOf(entries[i]) : null
@@ -388,36 +388,36 @@ async function drawPictureGridPage(doc, ticket, sheetTitle, entries, options = {
  * QcChecklistModal giống flow exportTicketsExcel - để trống thì mặc định "v".
  */
 export async function exportTicketPdf(ticketId, { onProgress, qcChecklistValues } = {}) {
-  onProgress?.('Đang tải dữ liệu phiếu...')
+  onProgress?.('Loading ticket data...')
   const ticket = await getQaTicket(ticketId)
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
-  onProgress?.('Đang nạp font tiếng Việt...')
+  onProgress?.('Loading fonts...')
   await registerVietnameseFont(doc)
 
-  let y = drawHeader(doc, ticket, 'In-line / Final Inspection Report', {
+  const reportTitle = `${STAGE_LABEL[ticket.inspectionStage] || ticket.inspectionStage || ''} Inspection Report`
+  let y = drawHeader(doc, ticket, reportTitle, {
     showAqlLine: true,
     extraRow: [
-      'Inspector (Người kiểm tra)',
+      'Inspector',
       ticket.staff?.name || '—',
       'Factory / Line',
       `${ticket.factory?.name || '—'} / ${ticket.line?.name || '—'}`,
     ],
   })
   y = drawMaterialsSection(doc, y, qcChecklistValues)
-  onProgress?.('Đang dựng bảng Inspection Points...')
+  onProgress?.('Building Inspection Points table...')
   drawInspectionPointsSection(doc, y, ticket)
 
-  onProgress?.('Đang chèn ảnh đo thông số...')
+  onProgress?.('Inserting measurement images...')
   await drawPictureGridPage(doc, ticket, 'Measurement sheet', ticket.measurementImages || [], {
     cols: 1,
     boxSize: 140,
-    emptyMessage: 'Chưa có ảnh đo thông số',
     onProgress,
-    progressPrefix: 'Đang xử lý ảnh đo thông số',
+    progressPrefix: 'Processing measurement image',
   })
 
-  onProgress?.('Đang chèn ảnh Accept...')
+  onProgress?.('Inserting Accept images...')
   await drawPictureGridPage(
     doc,
     ticket,
@@ -426,30 +426,27 @@ export async function exportTicketPdf(ticketId, { onProgress, qcChecklistValues 
     {
       titleColor: [22, 163, 74],
       captionOf: (e) => SPEC_IMAGE_TYPE_LABELS[e.type] || null,
-      emptyMessage: 'Chưa có ảnh duyệt (Spec Images)',
       onProgress,
-      progressPrefix: 'Đang xử lý ảnh Accept',
+      progressPrefix: 'Processing Accept image',
     },
   )
 
-  onProgress?.('Đang chèn ảnh Major Defects...')
+  onProgress?.('Inserting Major Defect images...')
   await drawPictureGridPage(doc, ticket, 'Picture Major Defects', collectDefectImagesForPdf(ticket, 'MAJOR'), {
     titleColor: [220, 38, 38],
     captionOf: (e) => `Defect: ${e.name}`,
-    emptyMessage: 'Không có ảnh lỗi Major',
     onProgress,
-    progressPrefix: 'Đang xử lý ảnh Major',
+    progressPrefix: 'Processing Major image',
   })
 
-  onProgress?.('Đang chèn ảnh Minor Defects...')
+  onProgress?.('Inserting Minor Defect images...')
   await drawPictureGridPage(doc, ticket, 'Picture Minor Defects', collectDefectImagesForPdf(ticket, 'MINOR'), {
     titleColor: [147, 51, 234],
     captionOf: (e) => `Defect: ${e.name}`,
-    emptyMessage: 'Không có ảnh lỗi Minor',
     onProgress,
-    progressPrefix: 'Đang xử lý ảnh Minor',
+    progressPrefix: 'Processing Minor image',
   })
 
-  onProgress?.('Đang tạo file PDF...')
-  doc.save(`Phieu_QA_${ticket.ticketCode || ticketId}.pdf`)
+  onProgress?.('Generating PDF file...')
+  doc.save(buildExportFilename([ticket], 'pdf'))
 }

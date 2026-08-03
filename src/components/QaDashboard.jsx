@@ -14,6 +14,7 @@ import {
 } from 'recharts'
 import { getQaDashboard } from '../api/dashboard'
 import { getFactories, getAllStaff } from '../api/master'
+import { useLanguage } from '../i18n/LanguageContext'
 
 const FILTER_INPUT_CLASS =
   'w-full bg-white text-slate-800 border border-slate-300 rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy'
@@ -84,10 +85,12 @@ function BlockPanel({ number, icon, title, extra, children }) {
 }
 
 function EmptyState() {
-  return <p className="text-sm text-slate-400 text-center py-10">Chưa có dữ liệu</p>
+  const { t } = useLanguage()
+  return <p className="text-sm text-slate-400 text-center py-10">{t('Chưa có dữ liệu')}</p>
 }
 
 export default function QaDashboard({ userInfo }) {
+  const { t } = useLanguage()
   const isAdmin = userInfo?.role === 'ADMIN'
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -115,7 +118,7 @@ export default function QaDashboard({ userInfo }) {
     setError('')
     getQaDashboard({ staffId: filters.staffId || undefined, factoryId: filters.factoryId || undefined })
       .then(setData)
-      .catch((err) => setError(err.message || 'Không tải được dữ liệu dashboard'))
+      .catch((err) => setError(err.message || t('Không tải được dữ liệu dashboard')))
       .finally(() => setLoading(false))
   }, [filters.staffId, filters.factoryId])
 
@@ -131,18 +134,17 @@ export default function QaDashboard({ userInfo }) {
   return (
     <div className="min-h-screen py-6 px-3 sm:px-6">
       <div className="max-w-6xl mx-auto space-y-4">
-        <h1 className="text-lg font-bold text-slate-800">Dashboard QA</h1>
-
         <div className="bg-white rounded-xl shadow-sm p-4">
+          <h1 className="text-lg font-bold text-slate-800 mb-3">{t('Dashboard QA')}</h1>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Nhà máy</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">{t('Nhà máy')}</label>
               <select
                 className={FILTER_INPUT_CLASS}
                 value={filters.factoryId}
                 onChange={(e) => updateFilter('factoryId', e.target.value)}
               >
-                <option value="">Tất cả</option>
+                <option value="">{t('Tất cả')}</option>
                 {factoryOptions.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -152,13 +154,13 @@ export default function QaDashboard({ userInfo }) {
             </div>
             {isAdmin && (
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Nhân viên</label>
+                <label className="block text-xs font-medium text-slate-500 mb-1">{t('Nhân viên')}</label>
                 <select
                   className={FILTER_INPUT_CLASS}
                   value={filters.staffId}
                   onChange={(e) => updateFilter('staffId', e.target.value)}
                 >
-                  <option value="">Tất cả</option>
+                  <option value="">{t('Tất cả')}</option>
                   {staffOptions.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
@@ -175,7 +177,7 @@ export default function QaDashboard({ userInfo }) {
             {error}
           </div>
         )}
-        {loading && <p className="text-sm text-slate-400">Đang tải...</p>}
+        {loading && <p className="text-sm text-slate-400">{t('Đang tải...')}</p>}
 
         {!loading && data && (
           <>
@@ -183,10 +185,10 @@ export default function QaDashboard({ userInfo }) {
             <BlockPanel
               number={1}
               icon={<InspectionsIcon className="w-4 h-4 text-brand-navy" />}
-              title="Số lượt kiểm theo khâu"
+              title={t('Số lượt kiểm theo khâu')}
               extra={
                 <span className="text-xs text-slate-400">
-                  Tổng số lượt kiểm: <span className="font-semibold text-slate-600">{data.totalInspections ?? 0}</span>
+                  {t('Tổng số lượt kiểm:')} <span className="font-semibold text-slate-600">{data.totalInspections ?? 0}</span>
                 </span>
               }
             >
@@ -202,7 +204,7 @@ export default function QaDashboard({ userInfo }) {
                     >
                       <p className="text-xs font-medium text-slate-500 truncate">{s.label}</p>
                       <p className="text-2xl font-extrabold text-slate-800 mt-1">{s.count}</p>
-                      <p className="text-[11px] text-slate-400">lần kiểm</p>
+                      <p className="text-[11px] text-slate-400">{t('lần kiểm')}</p>
                     </div>
                   ))}
                 </div>
@@ -214,7 +216,7 @@ export default function QaDashboard({ userInfo }) {
               <BlockPanel
                 number={2}
                 icon={<TrendIcon className="w-4 h-4 text-brand-navy" />}
-                title="Tỉ lệ DHU (%) theo ngày"
+                title={t('Tỉ lệ DHU (%) theo ngày')}
               >
                 {dhuTimeline.length === 0 ? (
                   <EmptyState />
@@ -238,12 +240,12 @@ export default function QaDashboard({ userInfo }) {
                         />
                         <Tooltip
                           contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: GRID_COLOR }}
-                          formatter={(value) => [`${value}%`, 'Tỉ lệ DHU']}
+                          formatter={(value) => [`${value}%`, t('Tỉ lệ DHU')]}
                         />
                         <Line
                           type="monotone"
                           dataKey="dhuPercent"
-                          name="Tỉ lệ DHU (%)"
+                          name={t('Tỉ lệ DHU (%)')}
                           stroke={LINE_COLOR}
                           strokeWidth={2}
                           dot={{ r: 4, fill: LINE_COLOR }}
@@ -259,7 +261,7 @@ export default function QaDashboard({ userInfo }) {
               <BlockPanel
                 number={3}
                 icon={<ParetoIcon className="w-4 h-4 text-brand-navy" />}
-                title="Pareto nhóm lỗi"
+                title={t('Pareto nhóm lỗi')}
               >
                 {paretoDefectGroups.length === 0 ? (
                   <EmptyState />
@@ -296,7 +298,7 @@ export default function QaDashboard({ userInfo }) {
                         <Bar
                           yAxisId="left"
                           dataKey="defectCount"
-                          name="Số lượng lỗi"
+                          name={t('Số lượng lỗi')}
                           fill={PARETO_BAR_COLOR}
                           radius={[4, 4, 0, 0]}
                         />
@@ -304,7 +306,7 @@ export default function QaDashboard({ userInfo }) {
                           yAxisId="right"
                           type="monotone"
                           dataKey="cumulativePercent"
-                          name="% tích luỹ"
+                          name={t('% tích luỹ')}
                           stroke={PARETO_LINE_COLOR}
                           strokeWidth={2}
                           dot={{ r: 4, fill: PARETO_LINE_COLOR }}
@@ -321,7 +323,7 @@ export default function QaDashboard({ userInfo }) {
             <BlockPanel
               number={4}
               icon={<ColumnsIcon className="w-4 h-4 text-brand-navy" />}
-              title="Tỉ lệ DHU (%) theo khâu kiểm"
+              title={t('Tỉ lệ DHU (%) theo khâu kiểm')}
             >
               {dhuByStage.length === 0 ? (
                 <EmptyState />
@@ -345,9 +347,9 @@ export default function QaDashboard({ userInfo }) {
                       />
                       <Tooltip
                         contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: GRID_COLOR }}
-                        formatter={(value) => [`${value}%`, 'Tỉ lệ DHU']}
+                        formatter={(value) => [`${value}%`, t('Tỉ lệ DHU')]}
                       />
-                      <Bar dataKey="dhuPercent" name="Tỉ lệ DHU (%)" fill={COLUMN_BAR_COLOR} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="dhuPercent" name={t('Tỉ lệ DHU (%)')} fill={COLUMN_BAR_COLOR} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

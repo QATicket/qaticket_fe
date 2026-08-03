@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { QC_CHECKLIST_GROUPS, defaultQcChecklistValues } from '../utils/qcChecklist'
+import { useLanguage } from '../i18n/LanguageContext'
 
 export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'Excel' }) {
+  const { t } = useLanguage()
   const [values, setValues] = useState(() => defaultQcChecklistValues())
 
   function setItemValue(itemId, value) {
@@ -12,19 +14,21 @@ export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'E
     <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/40 p-3 sm:p-6 overflow-y-auto">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl my-6">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-          <h2 className="font-bold text-slate-800">Chọn v/x tiêu chí trước khi xuất {exportLabel}</h2>
+          <h2 className="font-bold text-slate-800">
+            {t('Chọn v/x tiêu chí trước khi xuất {{label}}', { label: exportLabel })}
+          </h2>
           <button
             type="button"
             onClick={onCancel}
             className="text-sm text-slate-500 hover:text-brand-red underline"
           >
-            Đóng
+            {t('Đóng')}
           </button>
         </div>
 
         <div className="px-5 py-4 max-h-[70vh] overflow-y-auto">
           <p className="text-xs text-slate-400 mb-4">
-            Mặc định tất cả là "v" (đạt). Tick "x" cho tiêu chí không đạt.
+            {t('Mặc định tất cả là "v" (đạt). Tick "x" cho tiêu chí không đạt.')}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -39,8 +43,8 @@ export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'E
                         <button
                           type="button"
                           onClick={() => setItemValue(item.id, 'v')}
-                          title="Đạt"
-                          aria-label="Đạt"
+                          title={t('Đạt')}
+                          aria-label={t('Đạt')}
                           aria-pressed={values[item.id] === 'v'}
                           className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors ${
                             values[item.id] === 'v'
@@ -53,8 +57,8 @@ export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'E
                         <button
                           type="button"
                           onClick={() => setItemValue(item.id, 'x')}
-                          title="Không đạt"
-                          aria-label="Không đạt"
+                          title={t('Không đạt')}
+                          aria-label={t('Không đạt')}
                           aria-pressed={values[item.id] === 'x'}
                           className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors ${
                             values[item.id] === 'x'
@@ -79,14 +83,14 @@ export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'E
             onClick={onCancel}
             className="text-sm text-slate-500 hover:text-brand-red underline"
           >
-            Huỷ
+            {t('Huỷ')}
           </button>
           <button
             type="button"
             onClick={() => onConfirm(values)}
             className="bg-brand-navy text-white text-sm font-medium rounded-md px-4 py-2 hover:opacity-90"
           >
-            Xác nhận & Xuất {exportLabel}
+            {t('Xác nhận & Xuất {{label}}', { label: exportLabel })}
           </button>
         </div>
       </div>

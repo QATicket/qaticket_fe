@@ -1,6 +1,7 @@
 import SearchableSelect from './SearchableSelect'
 import LocationItem from './LocationItem'
 import { emptyLocation } from '../utils/id'
+import { useLanguage } from '../i18n/LanguageContext'
 
 export default function DefectItem({
   defect,
@@ -11,6 +12,7 @@ export default function DefectItem({
   onRemove,
   error,
 }) {
+  const { t } = useLanguage()
   function handleDefectChange(id) {
     const item = defectItemOptions.find((o) => String(o.value) === String(id))
     const allowMinor = item?.allowMinor ?? false
@@ -46,17 +48,17 @@ export default function DefectItem({
           onClick={onRemove}
           className="text-sm text-slate-400 hover:text-brand-red underline"
         >
-          Xoá defect
+          {t('Xoá defect')}
         </button>
       </div>
 
       <div className="mb-3">
-        <label className="block text-xs font-medium text-slate-500 mb-1">1. DEFECT (Lỗi)</label>
+        <label className="block text-xs font-medium text-slate-500 mb-1">{t('1. DEFECT (Lỗi)')}</label>
         <SearchableSelect
           options={defectItemOptions}
           value={defect.defectId}
           onChange={handleDefectChange}
-          placeholder="Tìm và chọn lỗi"
+          placeholder={t('Tìm và chọn lỗi')}
           error={error?.defectId}
         />
       </div>
@@ -64,7 +66,7 @@ export default function DefectItem({
       {defect.defectId && (defect.allowMinor || defect.allowMajor) && (
         <div className="mb-3">
           <label className="block text-xs font-medium text-slate-500 mb-1">
-            Mức độ lỗi (Severity)
+            {t('Mức độ lỗi (Severity)')}
           </label>
           {defect.allowMinor && defect.allowMajor ? (
             <select
@@ -74,13 +76,13 @@ export default function DefectItem({
               value={defect.severity || ''}
               onChange={(e) => onChange({ severity: e.target.value || null })}
             >
-              <option value="">-- Chọn mức độ --</option>
-              <option value="MAJOR">Major (Lỗi nặng)</option>
-              <option value="MINOR">Minor (Lỗi nhẹ)</option>
+              <option value="">{t('-- Chọn mức độ --')}</option>
+              <option value="MAJOR">{t('Major (Lỗi nặng)')}</option>
+              <option value="MINOR">{t('Minor (Lỗi nhẹ)')}</option>
             </select>
           ) : (
             <div className="w-full border border-slate-200 bg-slate-100 text-slate-600 rounded-md px-3 py-2 text-sm">
-              {defect.severity === 'MAJOR' ? 'Major (Lỗi nặng)' : 'Minor (Lỗi nhẹ)'}
+              {defect.severity === 'MAJOR' ? t('Major (Lỗi nặng)') : t('Minor (Lỗi nhẹ)')}
             </div>
           )}
           {error?.severity && <p className="text-xs text-brand-red mt-1">{error.severity}</p>}
@@ -92,7 +94,7 @@ export default function DefectItem({
         <textarea
           className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy"
           rows={2}
-          placeholder="Ghi chú lỗi (optional)"
+          placeholder={t('Ghi chú lỗi (optional)')}
           value={defect.note}
           onChange={(e) => onChange({ note: e.target.value })}
         />
@@ -120,7 +122,7 @@ export default function DefectItem({
         onClick={addLocation}
         className="mt-3 w-full border-2 border-dashed border-sky-300 text-sky-600 text-sm font-medium rounded-md py-2 hover:bg-sky-50"
       >
-        + Thêm vị trí (Add Location)
+        {t('+ Thêm vị trí (Add Location)')}
       </button>
     </div>
   )

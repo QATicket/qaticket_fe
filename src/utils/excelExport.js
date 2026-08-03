@@ -173,8 +173,10 @@ function sanitizeFilenamePart(text) {
   return String(text || '').trim().replace(/[\\/:*?"<>|]+/g, '-')
 }
 
-// [dd.mm.yyyy]-[KHÂU KIỂM]-[PO] - xem yêu cầu đặt tên file export.
-function buildExportFilename(tickets) {
+// [dd.mm.yyyy]-[KHÂU KIỂM]-[PO] - xem yêu cầu đặt tên file export. extension dùng
+// chung cho cả Excel ('xlsx') lẫn PDF ('pdf', xem pdfExport.js) để 2 loại file
+// xuất ra cùng 1 ticket/lô luôn đặt tên nhất quán với nhau.
+export function buildExportFilename(tickets, extension = 'xlsx') {
   const firstTicket = tickets[0]
   const datePart = formatExportDate(new Date())
   const stagePart = sanitizeFilenamePart(firstTicket?.inspectionStage) || 'UNKNOWN'
@@ -182,7 +184,7 @@ function buildExportFilename(tickets) {
     tickets.length > 1
       ? tickets.map((t) => sanitizeFilenamePart(t.poNumber || t.ticketCode)).join('-')
       : sanitizeFilenamePart(firstTicket?.poNumber || firstTicket?.ticketCode)
-  return `[${datePart}]-[${stagePart}]-[${poPart}].xlsx`
+  return `[${datePart}]-[${stagePart}]-[${poPart}].${extension}`
 }
 
 // Điền các ô header động (dòng 4-5) từ ticket đầu tiên - xem Header mapping.md.

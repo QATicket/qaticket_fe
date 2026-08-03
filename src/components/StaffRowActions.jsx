@@ -1,7 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useLanguage } from '../i18n/LanguageContext'
 
 export default function StaffRowActions({ staff, locked, busy, onLock, onUnlock, onResetPassword }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
   const buttonRef = useRef(null)
@@ -55,7 +57,7 @@ export default function StaffRowActions({ staff, locked, busy, onLock, onUnlock,
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        title="Thao tác"
+        title={t('Thao tác')}
         className="w-8 h-8 flex items-center justify-center rounded-md text-slate-500 text-lg leading-none tracking-widest hover:bg-slate-100"
       >
         ⋮
@@ -74,7 +76,7 @@ export default function StaffRowActions({ staff, locked, busy, onLock, onUnlock,
               onClick={() => runAndClose(onLock)}
               className="w-full text-left px-3 py-2 text-sm text-brand-red hover:bg-red-50 disabled:opacity-50"
             >
-              Khoá tài khoản
+              {t('Khoá tài khoản')}
             </button>
             <button
               type="button"
@@ -82,7 +84,7 @@ export default function StaffRowActions({ staff, locked, busy, onLock, onUnlock,
               onClick={() => runAndClose(onUnlock)}
               className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
             >
-              Mở khoá
+              {t('Mở khoá')}
             </button>
             <button
               type="button"
@@ -90,7 +92,7 @@ export default function StaffRowActions({ staff, locked, busy, onLock, onUnlock,
               onClick={() => runAndClose(onResetPassword)}
               className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
             >
-              Reset mật khẩu
+              {t('Reset mật khẩu')}
             </button>
           </div>,
           document.body,

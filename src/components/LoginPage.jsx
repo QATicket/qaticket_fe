@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { login } from '../api/auth'
 import WorkshopWatermark from './WorkshopWatermark'
+import { useLanguage } from '../i18n/LanguageContext'
 
 function ShirtHangerIcon({ className }) {
   return (
@@ -59,6 +60,7 @@ function ShieldIcon({ className }) {
 }
 
 export default function LoginPage({ onLoggedIn }) {
+  const { t } = useLanguage()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -68,7 +70,7 @@ export default function LoginPage({ onLoggedIn }) {
 
   async function handleSubmit() {
     if (!username || !password) {
-      setError('Vui lòng nhập tài khoản và mật khẩu')
+      setError(t('Vui lòng nhập tài khoản và mật khẩu'))
       return
     }
     setLoading(true)
@@ -79,7 +81,7 @@ export default function LoginPage({ onLoggedIn }) {
       const data = await login(username, password)
       onLoggedIn(data)
     } catch (err) {
-      setError(err.message || 'Đăng nhập thất bại')
+      setError(err.message || t('Đăng nhập thất bại'))
     } finally {
       clearTimeout(wakeUpTimer)
       setLoading(false)
@@ -104,7 +106,7 @@ export default function LoginPage({ onLoggedIn }) {
           <div className="flex items-center gap-2 mt-1.5">
             <span className="h-px w-6 bg-slate-300" />
             <span className="text-[11px] font-medium text-slate-400 tracking-widest uppercase">
-              Management System
+              {t('Management System')}
             </span>
             <span className="h-px w-6 bg-slate-300" />
           </div>
@@ -115,7 +117,7 @@ export default function LoginPage({ onLoggedIn }) {
             <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               className="w-full bg-white border border-slate-200 rounded-lg pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy/30 focus:border-brand-navy"
-              placeholder="Tài khoản"
+              placeholder={t('Tài khoản')}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
@@ -126,7 +128,7 @@ export default function LoginPage({ onLoggedIn }) {
             <input
               type={showPassword ? 'text' : 'password'}
               className="w-full bg-white border border-slate-200 rounded-lg pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy/30 focus:border-brand-navy"
-              placeholder="Mật khẩu"
+              placeholder={t('Mật khẩu')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
@@ -135,7 +137,7 @@ export default function LoginPage({ onLoggedIn }) {
               type="button"
               onClick={() => setShowPassword((s) => !s)}
               tabIndex={-1}
-              aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              aria-label={showPassword ? t('Ẩn mật khẩu') : t('Hiện mật khẩu')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
             >
               {showPassword ? <EyeOffIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
@@ -145,8 +147,9 @@ export default function LoginPage({ onLoggedIn }) {
           {error && <p className="text-sm text-brand-red mb-3">{error}</p>}
           {wakingUp && (
             <p className="text-sm text-slate-500 mb-3">
-              Server đang khởi động lại (có thể mất tới 30-60 giây ở lần dùng đầu tiên sau một
-              thời gian không hoạt động), vui lòng chờ...
+              {t(
+                'Server đang khởi động lại (có thể mất tới 30-60 giây ở lần dùng đầu tiên sau một thời gian không hoạt động), vui lòng chờ...',
+              )}
             </p>
           )}
           <button
@@ -155,7 +158,7 @@ export default function LoginPage({ onLoggedIn }) {
             disabled={loading}
             className="w-full bg-brand-navy text-white font-semibold rounded-lg py-3.5 hover:bg-brand-navyDark transition-colors disabled:opacity-60"
           >
-            {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            {loading ? t('Đang đăng nhập...') : t('Đăng nhập')}
           </button>
         </div>
 

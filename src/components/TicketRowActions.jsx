@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useLanguage } from '../i18n/LanguageContext'
 
 export default function TicketRowActions({
   ticket,
@@ -12,6 +13,7 @@ export default function TicketRowActions({
   onUnexport,
   onDelete,
 }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
   const buttonRef = useRef(null)
@@ -65,7 +67,7 @@ export default function TicketRowActions({
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        title="Thao tác"
+        title={t('Thao tác')}
         className="w-8 h-8 flex items-center justify-center rounded-md text-slate-500 text-lg leading-none tracking-widest hover:bg-slate-100"
       >
         ⋮
@@ -83,32 +85,32 @@ export default function TicketRowActions({
               onClick={() => runAndClose(onView)}
               className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
             >
-              Xem chi tiết
+              {t('Xem chi tiết')}
             </button>
             <button
               type="button"
               onClick={() => runAndClose(onEdit)}
               className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
             >
-              Sửa
+              {t('Sửa')}
             </button>
             <button
               type="button"
               disabled={busy || (ticket.exported && !isAdmin)}
-              title={ticket.exported && !isAdmin ? 'Phiếu đã xuất, không thể xuất lại' : undefined}
+              title={ticket.exported && !isAdmin ? t('Phiếu đã xuất, không thể xuất lại') : undefined}
               onClick={() => runAndClose(onExportPdf)}
               className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
             >
-              Xuất PDF
+              {t('Xuất PDF')}
             </button>
             <button
               type="button"
               disabled={busy || (ticket.exported && !isAdmin)}
-              title={ticket.exported && !isAdmin ? 'Phiếu đã xuất, không thể xuất lại' : undefined}
+              title={ticket.exported && !isAdmin ? t('Phiếu đã xuất, không thể xuất lại') : undefined}
               onClick={() => runAndClose(onExportExcel)}
               className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
             >
-              Xuất Excel
+              {t('Xuất Excel')}
             </button>
             {isAdmin && ticket.exported && (
               <button
@@ -117,7 +119,7 @@ export default function TicketRowActions({
                 onClick={() => runAndClose(onUnexport)}
                 className="w-full text-left px-3 py-2 text-sm text-sky-600 hover:bg-sky-50 disabled:opacity-50"
               >
-                Cho phép xuất lại
+                {t('Cho phép xuất lại')}
               </button>
             )}
             {ticket.status === 'DRAFT' && (
@@ -127,7 +129,7 @@ export default function TicketRowActions({
                 onClick={() => runAndClose(onDelete)}
                 className="w-full text-left px-3 py-2 text-sm text-brand-red hover:bg-red-50 disabled:opacity-50"
               >
-                Xoá
+                {t('Xoá')}
               </button>
             )}
           </div>,

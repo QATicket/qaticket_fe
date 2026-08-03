@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { resetStaffPassword } from '../api/admin'
+import { useLanguage } from '../i18n/LanguageContext'
 
 export default function ResetStaffPasswordModal({ staff, onClose, onSuccess }) {
+  const { t } = useLanguage()
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -10,15 +12,15 @@ export default function ResetStaffPasswordModal({ staff, onClose, onSuccess }) {
   async function handleSubmit() {
     setError('')
     if (!newPassword || !confirmPassword) {
-      setError('Vui lòng nhập đầy đủ thông tin')
+      setError(t('Vui lòng nhập đầy đủ thông tin'))
       return
     }
     if (newPassword.length < 6) {
-      setError('Mật khẩu mới phải có ít nhất 6 ký tự')
+      setError(t('Mật khẩu mới phải có ít nhất 6 ký tự'))
       return
     }
     if (newPassword !== confirmPassword) {
-      setError('Xác nhận mật khẩu mới không khớp')
+      setError(t('Xác nhận mật khẩu mới không khớp'))
       return
     }
 
@@ -27,7 +29,7 @@ export default function ResetStaffPasswordModal({ staff, onClose, onSuccess }) {
       await resetStaffPassword(staff.id, newPassword)
       onSuccess()
     } catch (err) {
-      setError(err.message || 'Reset mật khẩu thất bại')
+      setError(err.message || t('Reset mật khẩu thất bại'))
     } finally {
       setSaving(false)
     }
@@ -38,20 +40,20 @@ export default function ResetStaffPasswordModal({ staff, onClose, onSuccess }) {
       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm my-6">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <h2 className="font-bold text-slate-800">
-            Reset mật khẩu {staff.fullName ? `- ${staff.fullName}` : ''}
+            {t('Reset mật khẩu')} {staff.fullName ? `- ${staff.fullName}` : ''}
           </h2>
           <button
             type="button"
             onClick={onClose}
             className="text-sm text-slate-500 hover:text-brand-red underline"
           >
-            Đóng
+            {t('Đóng')}
           </button>
         </div>
 
         <div className="px-5 py-4">
           <div onKeyDown={(e) => e.key === 'Enter' && handleSubmit()} className="space-y-3">
-            <Field label="Mật khẩu mới">
+            <Field label={t('Mật khẩu mới')}>
               <input
                 type="password"
                 className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy"
@@ -60,7 +62,7 @@ export default function ResetStaffPasswordModal({ staff, onClose, onSuccess }) {
                 autoComplete="new-password"
               />
             </Field>
-            <Field label="Xác nhận mật khẩu mới">
+            <Field label={t('Xác nhận mật khẩu mới')}>
               <input
                 type="password"
                 className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy"
@@ -80,7 +82,7 @@ export default function ResetStaffPasswordModal({ staff, onClose, onSuccess }) {
             onClick={onClose}
             className="text-sm text-slate-500 hover:text-brand-red underline"
           >
-            Huỷ
+            {t('Huỷ')}
           </button>
           <button
             type="button"
@@ -88,7 +90,7 @@ export default function ResetStaffPasswordModal({ staff, onClose, onSuccess }) {
             disabled={saving}
             className="bg-brand-navy text-white text-sm font-medium rounded-md px-4 py-2 hover:opacity-90 disabled:opacity-60"
           >
-            {saving ? 'Đang lưu...' : 'Reset mật khẩu'}
+            {saving ? t('Đang lưu...') : t('Reset mật khẩu')}
           </button>
         </div>
       </div>

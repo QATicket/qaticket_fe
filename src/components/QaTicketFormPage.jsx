@@ -16,12 +16,14 @@ import { emptyFormState } from '../utils/id'
 import { loadDraft, saveDraft, clearDraft } from '../utils/draft'
 import { validateForm, hasErrors } from '../utils/validate'
 import { toPayload, fromResponse } from '../utils/mapper'
+import { useLanguage } from '../i18n/LanguageContext'
 
 function toOptions(list, labelKey = 'name') {
   return list.map((item) => ({ value: item.id, label: item[labelKey] }))
 }
 
 export default function QaTicketFormPage({ userInfo, ticketId, onBackToList }) {
+  const { t } = useLanguage()
   const [form, setForm] = useState(() => ({
     ...emptyFormState(),
     staffId: userInfo.staffId,
@@ -70,7 +72,7 @@ export default function QaTicketFormPage({ userInfo, ticketId, onBackToList }) {
       setLoadingTicket(true)
       getQaTicket(editingId)
         .then((data) => setForm(fromResponse(data)))
-        .catch((err) => setServerError(err.message || 'Không tải được phiếu'))
+        .catch((err) => setServerError(err.message || t('Không tải được phiếu')))
         .finally(() => setLoadingTicket(false))
     } else {
       const draft = loadDraft()
@@ -157,7 +159,7 @@ export default function QaTicketFormPage({ userInfo, ticketId, onBackToList }) {
     const validationErrors = validateForm(nextForm)
     setErrors(validationErrors)
     if (hasErrors(validationErrors)) {
-      setServerError('Vui lòng kiểm tra lại các trường còn thiếu/sai bên dưới.')
+      setServerError(t('Vui lòng kiểm tra lại các trường còn thiếu/sai bên dưới.'))
       return
     }
 
@@ -178,15 +180,15 @@ export default function QaTicketFormPage({ userInfo, ticketId, onBackToList }) {
       setSuccessDialog({
         message:
           status === 'SUBMITTED'
-            ? `Đã nộp phiếu ${response.ticketCode} thành công.`
-            : `Đã lưu nháp phiếu ${response.ticketCode} thành công.`,
+            ? t('Đã nộp phiếu {{code}} thành công.', { code: response.ticketCode })
+            : t('Đã lưu nháp phiếu {{code}} thành công.', { code: response.ticketCode }),
       })
     } catch (err) {
       if (err.status === 400 && err.fieldErrors) {
         setErrors((prev) => ({ ...prev, ...err.fieldErrors, defects: prev.defects }))
-        setServerError(err.message || 'Dữ liệu không hợp lệ.')
+        setServerError(err.message || t('Dữ liệu không hợp lệ.'))
       } else {
-        setServerError(err.message || 'Có lỗi xảy ra, vui lòng thử lại.')
+        setServerError(err.message || t('Có lỗi xảy ra, vui lòng thử lại.'))
       }
     } finally {
       setSaving(false)
@@ -194,7 +196,7 @@ export default function QaTicketFormPage({ userInfo, ticketId, onBackToList }) {
   }
 
   if (loadingTicket) {
-    return <div className="p-8 text-center text-slate-300">Đang tải phiếu...</div>
+    return <div className="p-8 text-center text-slate-300">{t('Đang tải phiếu...')}</div>
   }
 
   return (
@@ -218,7 +220,7 @@ export default function QaTicketFormPage({ userInfo, ticketId, onBackToList }) {
                 clipRule="evenodd"
               />
             </svg>
-            Quay lại danh sách
+            {t('Quay lại danh sách')}
           </button>
         )}
 
@@ -255,7 +257,7 @@ export default function QaTicketFormPage({ userInfo, ticketId, onBackToList }) {
               disabled={saving}
               className="bg-white border-2 border-brand-navy text-brand-navy font-semibold rounded-md px-6 py-2.5 hover:bg-slate-50 disabled:opacity-60"
             >
-              Nộp phiếu
+              {t('Nộp phiếu')}
             </button>
             <button
               type="button"
@@ -263,7 +265,7 @@ export default function QaTicketFormPage({ userInfo, ticketId, onBackToList }) {
               disabled={saving}
               className="bg-brand-navy text-white font-semibold rounded-md px-6 py-2.5 hover:opacity-90 disabled:opacity-60"
             >
-              {saving ? 'Đang lưu...' : 'Lưu Phiếu QA'}
+              {saving ? t('Đang lưu...') : t('Lưu Phiếu QA')}
             </button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { lockStaff, unlockStaff } from '../api/admin'
 import CreateStaffModal from './CreateStaffModal'
 import ResetStaffPasswordModal from './ResetStaffPasswordModal'
 import StaffRowActions from './StaffRowActions'
+import { useLanguage } from '../i18n/LanguageContext'
 
 // GET /api/master/staff trả field "active" (boolean) - tài khoản bị khoá khi active === false.
 function getLockedState(staff) {
@@ -12,6 +13,7 @@ function getLockedState(staff) {
 }
 
 export default function StaffManagementPage() {
+  const { t } = useLanguage()
   const [items, setItems] = useState([])
   const [nextCursor, setNextCursor] = useState(null)
   const [hasNext, setHasNext] = useState(false)
@@ -35,7 +37,7 @@ export default function StaffManagementPage() {
       setNextCursor(Array.isArray(res) ? null : res.nextCursor)
       setHasNext(Array.isArray(res) ? false : !!res.hasNext)
     } catch (err) {
-      setError(err.message || 'Không tải được danh sách nhân viên')
+      setError(err.message || t('Không tải được danh sách nhân viên'))
     } finally {
       setLoading(false)
     }
@@ -62,7 +64,7 @@ export default function StaffManagementPage() {
       await lockStaff(staff.id)
       load()
     } catch (err) {
-      setError(err.message || 'Khoá tài khoản thất bại')
+      setError(err.message || t('Khoá tài khoản thất bại'))
     } finally {
       setBusyId(null)
     }
@@ -75,7 +77,7 @@ export default function StaffManagementPage() {
       await unlockStaff(staff.id)
       load()
     } catch (err) {
-      setError(err.message || 'Mở khoá tài khoản thất bại')
+      setError(err.message || t('Mở khoá tài khoản thất bại'))
     } finally {
       setBusyId(null)
     }
@@ -86,24 +88,24 @@ export default function StaffManagementPage() {
       <div className="max-w-5xl mx-auto">
         <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-bold text-slate-800">Quản lý nhân viên</h1>
+            <h1 className="text-lg font-bold text-slate-800">{t('Quản lý nhân viên')}</h1>
             <button
               type="button"
               onClick={() => setCreateOpen(true)}
               className="bg-brand-navy text-white text-sm font-medium rounded-md px-4 py-2 hover:opacity-90"
             >
-              + Thêm nhân viên
+              {t('+ Thêm nhân viên')}
             </button>
           </div>
 
           <div className="mt-3 max-w-xs">
-            <label className="block text-xs font-medium text-slate-500 mb-1">Tìm theo tên</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">{t('Tìm theo tên')}</label>
             <input
               type="text"
               className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy"
               value={nameQuery}
               onChange={(e) => setNameQuery(e.target.value)}
-              placeholder="Nhập họ tên nhân viên"
+              placeholder={t('Nhập họ tên nhân viên')}
             />
           </div>
         </div>
@@ -118,11 +120,11 @@ export default function StaffManagementPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-left text-slate-500">
-                <th className="px-4 py-3">Họ tên</th>
-                <th className="px-4 py-3">Tài khoản</th>
-                <th className="px-4 py-3">Vai trò</th>
-                <th className="px-4 py-3">Trạng thái</th>
-                <th className="px-4 py-3">Hành động</th>
+                <th className="px-4 py-3">{t('Họ tên')}</th>
+                <th className="px-4 py-3">{t('Tài khoản')}</th>
+                <th className="px-4 py-3">{t('Vai trò')}</th>
+                <th className="px-4 py-3">{t('Trạng thái')}</th>
+                <th className="px-4 py-3">{t('Hành động')}</th>
               </tr>
             </thead>
             <tbody>
@@ -143,7 +145,7 @@ export default function StaffManagementPage() {
                             locked ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
                           }`}
                         >
-                          {locked ? 'Đã khoá' : 'Hoạt động'}
+                          {locked ? t('Đã khoá') : t('Hoạt động')}
                         </span>
                       )}
                     </td>
@@ -163,14 +165,14 @@ export default function StaffManagementPage() {
               {!loading && items.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
-                    Chưa có nhân viên nào
+                    {t('Chưa có nhân viên nào')}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
           {loading && items.length === 0 && (
-            <p className="text-sm text-slate-400 text-center py-6">Đang tải...</p>
+            <p className="text-sm text-slate-400 text-center py-6">{t('Đang tải...')}</p>
           )}
         </div>
 
@@ -182,7 +184,7 @@ export default function StaffManagementPage() {
               disabled={loading}
               className="bg-white border border-slate-300 rounded-md px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
-              {loading ? 'Đang tải...' : 'Tải thêm'}
+              {loading ? t('Đang tải...') : t('Tải thêm')}
             </button>
           )}
         </div>

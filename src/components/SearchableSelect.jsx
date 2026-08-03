@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 
 /**
  * Dropdown/combobox tìm kiếm dùng chung.
@@ -16,6 +17,7 @@ export default function SearchableSelect({
   freeTextValue = '',
   onFreeTextChange,
 }) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const containerRef = useRef(null)
@@ -46,7 +48,7 @@ export default function SearchableSelect({
         className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy disabled:bg-slate-100 disabled:text-slate-400 ${
           error ? 'border-brand-red' : 'border-slate-300'
         }`}
-        placeholder={placeholder}
+        placeholder={t(placeholder)}
         disabled={disabled}
         value={displayValue}
         onFocus={() => setOpen(true)}
@@ -60,7 +62,7 @@ export default function SearchableSelect({
       {open && !disabled && (
         <ul className="absolute z-20 mt-1 w-full max-h-56 overflow-auto bg-white border border-slate-200 rounded-md shadow-lg">
           {filtered.length === 0 && (
-            <li className="px-3 py-2 text-sm text-slate-400">Không có kết quả</li>
+            <li className="px-3 py-2 text-sm text-slate-400">{t('Không có kết quả')}</li>
           )}
           {filtered.map((o) => (
             <li

@@ -8,12 +8,14 @@ import TicketDetailModal from './TicketDetailModal'
 import ExportProgressModal from './ExportProgressModal'
 import QcChecklistModal from './QcChecklistModal'
 import InspectionResultBadge from './InspectionResultBadge'
+import { useLanguage } from '../i18n/LanguageContext'
 
 const STATUS_LABEL = { DRAFT: 'Nháp', SUBMITTED: 'Đã nộp' }
 const FILTER_INPUT_CLASS =
   'w-full bg-white text-slate-800 border border-slate-300 rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy'
 
 export default function TicketListPage({ userInfo, onEdit }) {
+  const { t } = useLanguage()
   const isAdmin = userInfo?.role === 'ADMIN'
   const [items, setItems] = useState([])
   const [nextCursor, setNextCursor] = useState(null)
@@ -98,7 +100,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
       setNextCursor(res.nextCursor)
       setHasNext(res.hasNext)
     } catch (err) {
-      setError(err.message || 'Không tải được danh sách phiếu')
+      setError(err.message || t('Không tải được danh sách phiếu'))
     } finally {
       setLoading(false)
     }
@@ -110,20 +112,20 @@ export default function TicketListPage({ userInfo, onEdit }) {
   }, [filters])
 
   async function handleDelete(id) {
-    if (!window.confirm('Xoá phiếu này? Chỉ xoá được phiếu ở trạng thái Nháp.')) return
+    if (!window.confirm(t('Xoá phiếu này? Chỉ xoá được phiếu ở trạng thái Nháp.'))) return
     setBusyId(id)
     try {
       await deleteQaTicket(id)
-      setItems((prev) => prev.filter((t) => t.id !== id))
+      setItems((prev) => prev.filter((row) => row.id !== id))
     } catch (err) {
-      setError(err.message || 'Xoá phiếu thất bại')
+      setError(err.message || t('Xoá phiếu thất bại'))
     } finally {
       setBusyId(null)
     }
   }
 
   function markExportedLocally(id) {
-    setItems((prev) => prev.map((t) => (t.id === id ? { ...t, exported: true } : t)))
+    setItems((prev) => prev.map((row) => (row.id === id ? { ...row, exported: true } : row)))
   }
 
   // Đánh dấu phiếu đã xuất ở BE ngay sau khi file được tạo thành công - phiếu
@@ -133,7 +135,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
       await exportQaTicket(ticket.id)
       markExportedLocally(ticket.id)
     } catch (err) {
-      setError(err.message || 'Cập nhật trạng thái đã xuất thất bại')
+      setError(err.message || t('Cập nhật trạng thái đã xuất thất bại'))
     }
   }
 
@@ -142,7 +144,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
   // sẽ chạy khi người dùng xác nhận (xem handleConfirmQcChecklist).
   function handleExportPdf(ticket) {
     if (ticket.exported && !isAdmin) {
-      setError('Phiếu này đã được xuất, không thể xuất lại')
+      setError(t('Phiếu này đã được xuất, không thể xuất lại'))
       return
     }
     setError('')
@@ -152,7 +154,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
 
   function handleExportExcel(ticket) {
     if (ticket.exported && !isAdmin) {
-      setError('Phiếu này đã được xuất, không thể xuất lại')
+      setError(t('Phiếu này đã được xuất, không thể xuất lại'))
       return
     }
     setError('')
@@ -168,12 +170,12 @@ export default function TicketListPage({ userInfo, onEdit }) {
     setError('')
 
     if (mode === 'pdf') {
-      setPdfProgress('Đang chuẩn bị...')
+      setPdfProgress(t('Đang chuẩn bị...'))
       try {
         await exportTicketPdf(ticket.id, { onProgress: setPdfProgress, qcChecklistValues })
         await markExported(ticket)
       } catch (err) {
-        setError(err.message || 'Xuất PDF thất bại')
+        setError(err.message || t('Xuất PDF thất bại'))
       } finally {
         setBusyId(null)
         setPdfProgress('')
@@ -181,7 +183,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
       return
     }
 
-    setExcelProgress('Đang chuẩn bị...')
+    setExcelProgress(t('Đang chuẩn bị...'))
     try {
       const { overflow, imageOverflow } = await exportTicketsExcel(ticket.id, {
         onProgress: setExcelProgress,
@@ -191,20 +193,30 @@ export default function TicketListPage({ userInfo, onEdit }) {
       const messages = []
       if (overflow.length > 0) {
         messages.push(
-          `${overflow.length} loại lỗi bị bỏ qua do vượt quá số dòng cho phép trong bảng lỗi`
+          t('{{count}} loại lỗi bị bỏ qua do vượt quá số dòng cho phép trong bảng lỗi', {
+            count: overflow.length,
+          }),
         )
       }
       if (imageOverflow?.major.length > 0) {
-        messages.push(`${imageOverflow.major.length} ảnh Major bị bỏ qua do vượt quá 16 khung ảnh`)
+        messages.push(
+          t('{{count}} ảnh Major bị bỏ qua do vượt quá 16 khung ảnh', {
+            count: imageOverflow.major.length,
+          }),
+        )
       }
       if (imageOverflow?.minor.length > 0) {
-        messages.push(`${imageOverflow.minor.length} ảnh Minor bị bỏ qua do vượt quá 16 khung ảnh`)
+        messages.push(
+          t('{{count}} ảnh Minor bị bỏ qua do vượt quá 16 khung ảnh', {
+            count: imageOverflow.minor.length,
+          }),
+        )
       }
       if (messages.length > 0) {
-        setError(`Đã xuất file nhưng ${messages.join('; ')}`)
+        setError(t('Đã xuất file nhưng {{details}}', { details: messages.join('; ') }))
       }
     } catch (err) {
-      setError(err.message || 'Xuất Excel thất bại')
+      setError(err.message || t('Xuất Excel thất bại'))
     } finally {
       setBusyId(null)
       setExcelProgress('')
@@ -216,9 +228,9 @@ export default function TicketListPage({ userInfo, onEdit }) {
     setError('')
     try {
       await unexportQaTicket(ticket.id)
-      setItems((prev) => prev.map((t) => (t.id === ticket.id ? { ...t, exported: false } : t)))
+      setItems((prev) => prev.map((row) => (row.id === ticket.id ? { ...row, exported: false } : row)))
     } catch (err) {
-      setError(err.message || 'Mở khoá xuất lại thất bại')
+      setError(err.message || t('Mở khoá xuất lại thất bại'))
     } finally {
       setBusyId(null)
     }
@@ -230,25 +242,25 @@ export default function TicketListPage({ userInfo, onEdit }) {
 
         <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-lg font-bold text-slate-800">Danh sách phiếu QA</h1>
+            <h1 className="text-lg font-bold text-slate-800">{t('Danh sách phiếu QA')}</h1>
             <button
               type="button"
               onClick={resetFilters}
               className="text-xs text-slate-500 hover:text-brand-navy underline"
             >
-              Xoá bộ lọc
+              {t('Xoá bộ lọc')}
             </button>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Nhà máy</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">{t('Nhà máy')}</label>
               <select
                 className={FILTER_INPUT_CLASS}
                 value={filters.factoryId}
                 onChange={(e) => updateFilter('factoryId', e.target.value)}
               >
-                <option value="">Tất cả</option>
+                <option value="">{t('Tất cả')}</option>
                 {factoryOptions.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -258,25 +270,25 @@ export default function TicketListPage({ userInfo, onEdit }) {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Khách hàng</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">{t('Khách hàng')}</label>
               <input
                 type="text"
                 className={FILTER_INPUT_CLASS}
                 value={customerQuery}
                 onChange={(e) => setCustomerQuery(e.target.value)}
-                placeholder="Tìm theo tên khách hàng"
+                placeholder={t('Tìm theo tên khách hàng')}
               />
             </div>
 
             {isAdmin && (
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Nhân viên</label>
+                <label className="block text-xs font-medium text-slate-500 mb-1">{t('Nhân viên')}</label>
                 <select
                   className={FILTER_INPUT_CLASS}
                   value={filters.staffId}
                   onChange={(e) => updateFilter('staffId', e.target.value)}
                 >
-                  <option value="">Tất cả</option>
+                  <option value="">{t('Tất cả')}</option>
                   {staffOptions.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
@@ -287,33 +299,33 @@ export default function TicketListPage({ userInfo, onEdit }) {
             )}
 
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Trạng thái</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">{t('Trạng thái')}</label>
               <select
                 className={FILTER_INPUT_CLASS}
                 value={filters.status}
                 onChange={(e) => updateFilter('status', e.target.value)}
               >
-                <option value="">Tất cả</option>
-                <option value="DRAFT">Nháp</option>
-                <option value="SUBMITTED">Đã nộp</option>
+                <option value="">{t('Tất cả')}</option>
+                <option value="DRAFT">{t('Nháp')}</option>
+                <option value="SUBMITTED">{t('Đã nộp')}</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Đã xuất</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">{t('Đã xuất')}</label>
               <select
                 className={FILTER_INPUT_CLASS}
                 value={filters.exported}
                 onChange={(e) => updateFilter('exported', e.target.value)}
               >
-                <option value="">Tất cả</option>
-                <option value="true">Đã xuất</option>
-                <option value="false">Chưa xuất</option>
+                <option value="">{t('Tất cả')}</option>
+                <option value="true">{t('Đã xuất')}</option>
+                <option value="false">{t('Chưa xuất')}</option>
               </select>
             </div>
 
             <div className="col-span-2 sm:col-span-1 lg:col-span-2">
-              <label className="block text-xs font-medium text-slate-500 mb-1">Từ ngày - Đến ngày</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">{t('Từ ngày - Đến ngày')}</label>
               <div className="flex items-center gap-1">
                 <input
                   type="date"
@@ -343,72 +355,72 @@ export default function TicketListPage({ userInfo, onEdit }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-left text-slate-500">
-                <th className="px-4 py-3">Mã phiếu</th>
-                <th className="px-4 py-3">Nhân viên</th>
-                <th className="px-4 py-3">Nhà máy</th>
-                <th className="px-4 py-3">Chuyền</th>
-                <th className="px-4 py-3">Khách hàng</th>
-                <th className="px-4 py-3">Khâu KT</th>
-                <th className="px-4 py-3">SL</th>
-                <th className="px-4 py-3">Trạng thái</th>
-                <th className="px-4 py-3">KQ AQL</th>
-                <th className="px-4 py-3">Xuất</th>
-                <th className="px-4 py-3">Ngày tạo</th>
-                <th className="px-4 py-3">Hành động</th>
+                <th className="px-4 py-3">{t('Mã phiếu')}</th>
+                <th className="px-4 py-3">{t('Nhân viên')}</th>
+                <th className="px-4 py-3">{t('Nhà máy')}</th>
+                <th className="px-4 py-3">{t('Chuyền')}</th>
+                <th className="px-4 py-3">{t('Khách hàng')}</th>
+                <th className="px-4 py-3">{t('Khâu KT')}</th>
+                <th className="px-4 py-3">{t('SL')}</th>
+                <th className="px-4 py-3">{t('Trạng thái')}</th>
+                <th className="px-4 py-3">{t('KQ AQL')}</th>
+                <th className="px-4 py-3">{t('Xuất')}</th>
+                <th className="px-4 py-3">{t('Ngày tạo')}</th>
+                <th className="px-4 py-3">{t('Hành động')}</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((t) => (
-                <tr key={t.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="px-4 py-2 font-medium text-brand-navy">{t.ticketCode}</td>
-                  <td className="px-4 py-2">{t.staffName}</td>
-                  <td className="px-4 py-2">{t.factoryName}</td>
-                  <td className="px-4 py-2">{t.lineName}</td>
-                  <td className="px-4 py-2">{t.customerName}</td>
-                  <td className="px-4 py-2">{t.inspectionStage}</td>
-                  <td className="px-4 py-2">{t.inspectedQty}</td>
+              {items.map((row) => (
+                <tr key={row.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  <td className="px-4 py-2 font-medium text-brand-navy">{row.ticketCode}</td>
+                  <td className="px-4 py-2">{row.staffName}</td>
+                  <td className="px-4 py-2">{row.factoryName}</td>
+                  <td className="px-4 py-2">{row.lineName}</td>
+                  <td className="px-4 py-2">{row.customerName}</td>
+                  <td className="px-4 py-2">{row.inspectionStage}</td>
+                  <td className="px-4 py-2">{row.inspectedQty}</td>
                   <td className="px-4 py-2">
                     <span
                       className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        t.status === 'DRAFT'
+                        row.status === 'DRAFT'
                           ? 'bg-slate-100 text-slate-600'
                           : 'bg-green-100 text-green-700'
                       }`}
                     >
-                      {STATUS_LABEL[t.status] || t.status}
+                      {t(STATUS_LABEL[row.status] || row.status)}
                     </span>
                   </td>
                   <td className="px-4 py-2">
                     <div className="flex flex-col gap-0.5">
-                      <InspectionResultBadge value={t.inspectionResult} />
-                      {t.samplingSize != null && (
-                        <span className="text-[11px] text-slate-400">n={t.samplingSize}</span>
+                      <InspectionResultBadge value={row.inspectionResult} />
+                      {row.samplingSize != null && (
+                        <span className="text-[11px] text-slate-400">n={row.samplingSize}</span>
                       )}
                     </div>
                   </td>
                   <td className="px-4 py-2">
                     <span
                       className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        t.exported ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-500'
+                        row.exported ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-500'
                       }`}
                     >
-                      {t.exported ? 'Có' : 'Không'}
+                      {row.exported ? t('Có') : t('Không')}
                     </span>
                   </td>
                   <td className="px-4 py-2 text-slate-500">
-                    {t.createdAt ? new Date(t.createdAt).toLocaleString('vi-VN') : ''}
+                    {row.createdAt ? new Date(row.createdAt).toLocaleString('vi-VN') : ''}
                   </td>
                   <td className="px-4 py-2">
                     <TicketRowActions
-                      ticket={t}
-                      busy={busyId === t.id}
+                      ticket={row}
+                      busy={busyId === row.id}
                       isAdmin={isAdmin}
-                      onView={() => setViewingTicketId(t.id)}
-                      onEdit={() => onEdit(t.id)}
-                      onExportPdf={() => handleExportPdf(t)}
-                      onExportExcel={() => handleExportExcel(t)}
-                      onUnexport={() => handleUnexport(t)}
-                      onDelete={() => handleDelete(t.id)}
+                      onView={() => setViewingTicketId(row.id)}
+                      onEdit={() => onEdit(row.id)}
+                      onExportPdf={() => handleExportPdf(row)}
+                      onExportExcel={() => handleExportExcel(row)}
+                      onUnexport={() => handleUnexport(row)}
+                      onDelete={() => handleDelete(row.id)}
                     />
                   </td>
                 </tr>
@@ -416,7 +428,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
               {items.length === 0 && !loading && (
                 <tr>
                   <td colSpan={12} className="px-4 py-8 text-center text-slate-400">
-                    Chưa có phiếu nào
+                    {t('Chưa có phiếu nào')}
                   </td>
                 </tr>
               )}
@@ -432,10 +444,10 @@ export default function TicketListPage({ userInfo, onEdit }) {
               disabled={loading}
               className="bg-white border border-slate-300 rounded-md px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
-              {loading ? 'Đang tải...' : 'Tải thêm'}
+              {loading ? t('Đang tải...') : t('Tải thêm')}
             </button>
           )}
-          {!hasNext && loading && <span className="text-sm text-slate-300">Đang tải...</span>}
+          {!hasNext && loading && <span className="text-sm text-slate-300">{t('Đang tải...')}</span>}
         </div>
       </div>
 

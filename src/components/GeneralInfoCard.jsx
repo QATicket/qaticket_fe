@@ -6,6 +6,7 @@ import ImageEditorModal from './ImageEditorModal'
 import AqlSamplingSection from './AqlSamplingSection'
 import { uploadImages } from '../api/uploads'
 import { blobToFile } from '../utils/image'
+import { useLanguage } from '../i18n/LanguageContext'
 
 const STAGE_OPTIONS = [
   { value: 'FIRST_OUTPUT', label: 'First Output' },
@@ -28,6 +29,7 @@ export default function GeneralInfoCard({
   groupOptions,
   garmentTypeOptions,
 }) {
+  const { t } = useLanguage()
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [pendingCameraFile, setPendingCameraFile] = useState(null)
@@ -43,7 +45,7 @@ export default function GeneralInfoCard({
       const urls = await uploadImages(files)
       onChange({ measurementImages: [...(form.measurementImages || []), ...urls] })
     } catch (err) {
-      setUploadError(err.message || 'Upload ảnh thất bại')
+      setUploadError(err.message || t('Upload ảnh thất bại'))
     } finally {
       setUploading(false)
     }
@@ -60,41 +62,41 @@ export default function GeneralInfoCard({
       </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-        <Field label="QA Name (Nhân viên QA)">
+        <Field label={t('QA Name (Nhân viên QA)')}>
           <div className="w-full border border-slate-200 bg-slate-100 text-slate-600 rounded-md px-3 py-2 text-sm">
             {form.staffName || '—'}
           </div>
         </Field>
 
-        <Field label="Factory (Nhà máy)" error={errors.factoryId}>
+        <Field label={t('Factory (Nhà máy)')} error={errors.factoryId}>
           <SearchableSelect
             options={factoryOptions}
             value={form.factoryId}
             onChange={(v) =>
               onChange({ factoryId: v, lineId: null, groupId: null })
             }
-            placeholder="Chọn nhà máy"
+            placeholder={t('Chọn nhà máy')}
             error={errors.factoryId}
           />
         </Field>
 
-        <Field label="Line (Chuyền may)" error={errors.lineId}>
+        <Field label={t('Line (Chuyền may)')} error={errors.lineId}>
           <SearchableSelect
             options={lineOptions}
             value={form.lineId}
             onChange={(v) => onChange({ lineId: v, groupId: null })}
-            placeholder="Chọn chuyền"
+            placeholder={t('Chọn chuyền')}
             disabled={!form.factoryId}
             error={errors.lineId}
           />
         </Field>
 
-        <Field label="Cụm / Group">
+        <Field label={t('Cụm / Group')}>
           <SearchableSelect
             options={groupOptions}
             value={form.groupId}
             onChange={(v) => onChange({ groupId: v })}
-            placeholder="Chọn cụm (optional)"
+            placeholder={t('Chọn cụm (optional)')}
             disabled={!form.lineId}
           />
         </Field>
@@ -121,17 +123,17 @@ export default function GeneralInfoCard({
             className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy"
             value={form.poNumber || ''}
             onChange={(e) => onChange({ poNumber: e.target.value })}
-            placeholder="Nhập số PO"
+            placeholder={t('Nhập số PO')}
           />
         </Field>
 
-        <Field label="Style (Mã hàng)">
+        <Field label={t('Style (Mã hàng)')}>
           <input
             type="text"
             className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy"
             value={form.style || ''}
             onChange={(e) => onChange({ style: e.target.value })}
-            placeholder="Nhập mã hàng (style)"
+            placeholder={t('Nhập mã hàng (style)')}
           />
         </Field>
 
@@ -144,12 +146,12 @@ export default function GeneralInfoCard({
           />
           {AQL_STAGES.includes(form.inspectionStage) && !!form.samplingSize && (
             <p className="text-[11px] text-slate-400 mt-1">
-              Tự động lấy theo Sampling size (AQL)
+              {t('Tự động lấy theo Sampling size (AQL)')}
             </p>
           )}
         </Field>
 
-        <Field label="Customer (Khách hàng)">
+        <Field label={t('Customer (Khách hàng)')}>
           <input
             type="text"
             className={`w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy ${
@@ -157,26 +159,26 @@ export default function GeneralInfoCard({
             }`}
             value={form.customerName || ''}
             onChange={(e) => onChange({ customerName: e.target.value })}
-            placeholder="Nhập tên khách hàng"
+            placeholder={t('Nhập tên khách hàng')}
           />
           {errors.customerName && (
             <p className="text-xs text-brand-red mt-1">{errors.customerName}</p>
           )}
         </Field>
 
-        <Field label="Garment (Loại sản phẩm)" error={errors.garmentTypeId}>
+        <Field label={t('Garment (Loại sản phẩm)')} error={errors.garmentTypeId}>
           <SearchableSelect
             options={garmentTypeOptions}
             value={form.garmentTypeId}
             onChange={(v) => onChange({ garmentTypeId: v })}
-            placeholder="Chọn loại sản phẩm"
+            placeholder={t('Chọn loại sản phẩm')}
             error={errors.garmentTypeId}
           />
         </Field>
       </div>
 
       <div className="mt-4">
-        <label className="block text-xs font-medium text-slate-500 mb-1">Hình ảnh thông số</label>
+        <label className="block text-xs font-medium text-slate-500 mb-1">{t('Hình ảnh thông số')}</label>
 
         <input
           ref={cameraInputRef}
@@ -202,7 +204,7 @@ export default function GeneralInfoCard({
           }}
         />
 
-        {uploading && <p className="text-xs text-slate-400 mb-2">Đang tải ảnh lên...</p>}
+        {uploading && <p className="text-xs text-slate-400 mb-2">{t('Đang tải ảnh lên...')}</p>}
         {uploadError && <p className="text-xs text-brand-red mb-2">{uploadError}</p>}
 
         <div className="flex gap-2">
@@ -210,13 +212,13 @@ export default function GeneralInfoCard({
             onClick={() => cameraInputRef.current?.click()}
             disabled={uploading}
             icon={<CameraIcon />}
-            label="Chụp ảnh"
+            label={t('Chụp ảnh')}
           />
           <AddImageTile
             onClick={() => galleryInputRef.current?.click()}
             disabled={uploading}
             icon={<GalleryIcon />}
-            label="Thư viện"
+            label={t('Thư viện')}
           />
         </div>
 
@@ -230,7 +232,7 @@ export default function GeneralInfoCard({
                   onClick={() => removeImage(url)}
                   className="absolute -top-1.5 -right-1.5 bg-brand-red text-white rounded px-1 text-[10px] leading-4"
                 >
-                  Xoá
+                  {t('Xoá')}
                 </button>
               </div>
             ))}
@@ -252,32 +254,32 @@ export default function GeneralInfoCard({
       {AQL_STAGES.includes(form.inspectionStage) && (
         <div className="mt-4 pt-4 border-t border-slate-200">
           <label className="block text-xs font-medium text-slate-500 mb-2">
-            Upload hình ảnh duyệt (Spec Images)
+            {t('Upload hình ảnh duyệt (Spec Images)')}
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <MultiImageUpload
-              label="Mẫu duyệt (Approved Sample)"
+              label={t('Mẫu duyệt (Approved Sample)')}
               urls={form.specImages?.APPROVED_SAMPLE || []}
               onChange={(urls) =>
                 onChange({ specImages: { ...form.specImages, APPROVED_SAMPLE: urls } })
               }
             />
             <MultiImageUpload
-              label="Bảng thông số kích thước"
+              label={t('Bảng thông số kích thước')}
               urls={form.specImages?.SIZE_SPEC || []}
               onChange={(urls) =>
                 onChange({ specImages: { ...form.specImages, SIZE_SPEC: urls } })
               }
             />
             <MultiImageUpload
-              label="Quy cách đóng thùng/Bao bì"
+              label={t('Quy cách đóng thùng/Bao bì')}
               urls={form.specImages?.PACKING || []}
               onChange={(urls) =>
                 onChange({ specImages: { ...form.specImages, PACKING: urls } })
               }
             />
             <MultiImageUpload
-              label="Thẻ treo & Nhãn hiệu"
+              label={t('Thẻ treo & Nhãn hiệu')}
               urls={form.specImages?.HANGTAG_LABEL || []}
               onChange={(urls) =>
                 onChange({ specImages: { ...form.specImages, HANGTAG_LABEL: urls } })
@@ -288,7 +290,7 @@ export default function GeneralInfoCard({
           {(form.specImages?.OTHER || []).length > 0 && (
             <div className="mt-4">
               <MultiImageUpload
-                label="Khác (ảnh cũ chưa phân loại)"
+                label={t('Khác (ảnh cũ chưa phân loại)')}
                 urls={form.specImages.OTHER}
                 readOnly
               />
@@ -312,6 +314,7 @@ function Field({ label, children }) {
 }
 
 function MultiImageUpload({ label, urls, onChange, readOnly }) {
+  const { t } = useLanguage()
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [pendingCameraFile, setPendingCameraFile] = useState(null)
@@ -327,7 +330,7 @@ function MultiImageUpload({ label, urls, onChange, readOnly }) {
       const newUrls = await uploadImages(files)
       onChange([...urls, ...newUrls])
     } catch (err) {
-      setError(err.message || 'Upload ảnh thất bại')
+      setError(err.message || t('Upload ảnh thất bại'))
     } finally {
       setUploading(false)
     }
@@ -368,7 +371,7 @@ function MultiImageUpload({ label, urls, onChange, readOnly }) {
           />
         </>
       )}
-      {uploading && <p className="text-xs text-slate-400 mb-2">Đang tải ảnh lên...</p>}
+      {uploading && <p className="text-xs text-slate-400 mb-2">{t('Đang tải ảnh lên...')}</p>}
       {error && <p className="text-xs text-brand-red mb-2">{error}</p>}
 
       {!readOnly && (
@@ -377,13 +380,13 @@ function MultiImageUpload({ label, urls, onChange, readOnly }) {
             onClick={() => cameraInputRef.current?.click()}
             disabled={uploading}
             icon={<CameraIcon />}
-            label="Chụp ảnh"
+            label={t('Chụp ảnh')}
           />
           <AddImageTile
             onClick={() => galleryInputRef.current?.click()}
             disabled={uploading}
             icon={<GalleryIcon />}
-            label="Thư viện"
+            label={t('Thư viện')}
           />
         </div>
       )}
@@ -403,7 +406,7 @@ function MultiImageUpload({ label, urls, onChange, readOnly }) {
                   onClick={() => removeImage(url)}
                   className="absolute -top-1.5 -right-1.5 bg-brand-red text-white rounded px-1 text-[10px] leading-4"
                 >
-                  Xoá
+                  {t('Xoá')}
                 </button>
               )}
             </div>

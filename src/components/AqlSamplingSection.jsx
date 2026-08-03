@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { lookupAql } from '../api/aql'
+import { useLanguage } from '../i18n/LanguageContext'
 
 const AQL_LEVEL_OPTIONS = ['1.5', '2.5']
 
@@ -17,6 +18,7 @@ function countActualDefects(defects) {
 }
 
 export default function AqlSamplingSection({ form, onChange, errors }) {
+  const { t } = useLanguage()
   const [preview, setPreview] = useState(null)
   const [lookupError, setLookupError] = useState('')
   const [lookupLoading, setLookupLoading] = useState(false)
@@ -47,7 +49,7 @@ export default function AqlSamplingSection({ form, onChange, errors }) {
         })
         .catch((err) => {
           setPreview(null)
-          setLookupError(err.message || 'Không tra được sampling plan')
+          setLookupError(err.message || t('Không tra được sampling plan'))
           onChange({ samplingSize: null })
         })
         .finally(() => setLookupLoading(false))
@@ -73,7 +75,7 @@ export default function AqlSamplingSection({ form, onChange, errors }) {
               const v = e.target.value
               onChange({ qtySize: v === '' ? null : Number(v) })
             }}
-            placeholder="Nhập order qty"
+            placeholder={t('Nhập order qty')}
           />
         </Field>
 
@@ -106,11 +108,12 @@ export default function AqlSamplingSection({ form, onChange, errors }) {
         </Field>
       </div>
       <p className="text-[11px] text-slate-400 mt-1">
-        Actual Major/Minor Defects tự tính từ tổng số lượng các defect đã khai báo bên dưới theo mức
-        độ (Major/Minor).
+        {t(
+          'Actual Major/Minor Defects tự tính từ tổng số lượng các defect đã khai báo bên dưới theo mức độ (Major/Minor).',
+        )}
       </p>
 
-      {lookupLoading && <p className="text-xs text-slate-400 mt-2">Đang tra sampling plan...</p>}
+      {lookupLoading && <p className="text-xs text-slate-400 mt-2">{t('Đang tra sampling plan...')}</p>}
       {lookupError && <p className="text-xs text-brand-red mt-2">{lookupError}</p>}
 
       {preview && !lookupLoading && (

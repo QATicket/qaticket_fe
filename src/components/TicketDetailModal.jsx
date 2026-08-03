@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getQaTicket } from '../api/qaTickets'
 import InspectionResultBadge from './InspectionResultBadge'
+import { useLanguage } from '../i18n/LanguageContext'
 
 const STATUS_LABEL = { DRAFT: 'Nháp', SUBMITTED: 'Đã nộp' }
 
@@ -23,6 +24,7 @@ function groupSpecImagesByType(specImages) {
 }
 
 export default function TicketDetailModal({ ticketId, onClose }) {
+  const { t } = useLanguage()
   const [ticket, setTicket] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -33,7 +35,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
     setError('')
     getQaTicket(ticketId)
       .then(setTicket)
-      .catch((err) => setError(err.message || 'Không tải được chi tiết phiếu'))
+      .catch((err) => setError(err.message || t('Không tải được chi tiết phiếu')))
       .finally(() => setLoading(false))
   }, [ticketId])
 
@@ -42,7 +44,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl my-6">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <h2 className="font-bold text-slate-800">
-            Chi tiết phiếu {ticket ? ticket.ticketCode : ''}
+            {t('Chi tiết phiếu {{code}}', { code: ticket ? ticket.ticketCode : '' })}
           </h2>
           <div className="flex items-center gap-3">
             <button
@@ -50,32 +52,32 @@ export default function TicketDetailModal({ ticketId, onClose }) {
               onClick={onClose}
               className="text-sm text-slate-500 hover:text-brand-red underline"
             >
-              Đóng
+              {t('Đóng')}
             </button>
           </div>
         </div>
 
         <div className="px-5 py-4 max-h-[75vh] overflow-y-auto">
-          {loading && <p className="text-sm text-slate-400 text-center py-8">Đang tải...</p>}
+          {loading && <p className="text-sm text-slate-400 text-center py-8">{t('Đang tải...')}</p>}
           {error && <p className="text-sm text-brand-red mb-3">{error}</p>}
 
           {ticket && !loading && (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm mb-5">
-                <InfoRow label="Nhân viên QA" value={ticket.staff?.name} />
-                <InfoRow label="Trạng thái" value={STATUS_LABEL[ticket.status] || ticket.status} />
-                <InfoRow label="Nhà máy" value={ticket.factory?.name} />
-                <InfoRow label="Chuyền" value={ticket.line?.name} />
-                <InfoRow label="Cụm / Group" value={ticket.group?.name || '—'} />
+                <InfoRow label={t('Nhân viên QA')} value={ticket.staff?.name} />
+                <InfoRow label={t('Trạng thái')} value={t(STATUS_LABEL[ticket.status] || ticket.status)} />
+                <InfoRow label={t('Nhà máy')} value={ticket.factory?.name} />
+                <InfoRow label={t('Chuyền')} value={ticket.line?.name} />
+                <InfoRow label={t('Cụm / Group')} value={ticket.group?.name || '—'} />
                 <InfoRow label="PO" value={ticket.poNumber || '—'} />
-                <InfoRow label="Style (Mã hàng)" value={ticket.style || '—'} />
-                <InfoRow label="Khách hàng" value={ticket.customerName} />
-                <InfoRow label="Loại sản phẩm" value={ticket.garmentType?.name} />
-                <InfoRow label="Khâu kiểm tra" value={ticket.inspectionStage} />
-                <InfoRow label="Sản lượng kiểm tra" value={ticket.inspectedQty} />
-                <InfoRow label="Đã xuất" value={ticket.exported ? 'Có' : 'Không'} />
+                <InfoRow label={t('Style (Mã hàng)')} value={ticket.style || '—'} />
+                <InfoRow label={t('Khách hàng')} value={ticket.customerName} />
+                <InfoRow label={t('Loại sản phẩm')} value={ticket.garmentType?.name} />
+                <InfoRow label={t('Khâu kiểm tra')} value={ticket.inspectionStage} />
+                <InfoRow label={t('Sản lượng kiểm tra')} value={ticket.inspectedQty} />
+                <InfoRow label={t('Đã xuất')} value={ticket.exported ? t('Có') : t('Không')} />
                 <InfoRow
-                  label="Ngày tạo"
+                  label={t('Ngày tạo')}
                   value={ticket.createdAt ? new Date(ticket.createdAt).toLocaleString('vi-VN') : '—'}
                 />
                 {(ticket.inspectionStage === 'FINAL' || ticket.inspectionStage === 'PREFINAL') && (
@@ -86,7 +88,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                     <InfoRow label="Actual Major Defects" value={ticket.actualMajorDefects ?? '—'} />
                     <InfoRow label="Actual Minor Defects" value={ticket.actualMinorDefects ?? '—'} />
                     <InfoRow
-                      label="Kết quả AQL"
+                      label={t('Kết quả AQL')}
                       value={<InspectionResultBadge value={ticket.inspectionResult} />}
                     />
                   </>
@@ -95,7 +97,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
 
               {ticket.measurementImages?.length > 0 && (
                 <div className="mb-5">
-                  <h3 className="font-semibold text-slate-700 text-sm mb-2">Hình ảnh thông số</h3>
+                  <h3 className="font-semibold text-slate-700 text-sm mb-2">{t('Hình ảnh thông số')}</h3>
                   <div className="flex flex-wrap gap-2">
                     {ticket.measurementImages.map((img) => (
                       <button key={img.id} type="button" onClick={() => setPreviewUrl(img.imageUrl)}>
@@ -112,14 +114,14 @@ export default function TicketDetailModal({ ticketId, onClose }) {
 
               {ticket.specImages?.length > 0 && (
                 <div className="mb-5">
-                  <h3 className="font-semibold text-slate-700 text-sm mb-2">Hình ảnh Spec</h3>
+                  <h3 className="font-semibold text-slate-700 text-sm mb-2">{t('Hình ảnh Spec')}</h3>
                   <div className="space-y-3">
                     {Object.entries(groupSpecImagesByType(ticket.specImages)).map(
                       ([type, imgs]) =>
                         imgs.length > 0 && (
                           <div key={type}>
                             <p className="text-xs font-medium text-slate-500 mb-1">
-                              {SPEC_IMAGE_LABELS[type]}
+                              {t(SPEC_IMAGE_LABELS[type])}
                             </p>
                             <div className="flex flex-wrap gap-2">
                               {imgs.map((img) => (
@@ -144,7 +146,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
               )}
 
               <h3 className="font-semibold text-slate-700 text-sm mb-2">
-                Defects ({ticket.defects?.length || 0})
+                {t('Defects ({{count}})', { count: ticket.defects?.length || 0 })}
               </h3>
               <div className="space-y-3">
                 {(ticket.defects || []).map((defect) => (
@@ -176,7 +178,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                       )}
                     </div>
                     {defect.note && (
-                      <p className="text-xs text-slate-500 mt-1">Ghi chú: {defect.note}</p>
+                      <p className="text-xs text-slate-500 mt-1">{t('Ghi chú:')} {defect.note}</p>
                     )}
                     <div className="mt-2 space-y-2">
                       {(defect.locations || []).map((loc) => (
@@ -186,7 +188,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                         >
                           <div className="flex items-center justify-between">
                             <span>{loc.locationText}</span>
-                            <span className="text-slate-500">SL: {loc.quantity}</span>
+                            <span className="text-slate-500">{t('SL:')} {loc.quantity}</span>
                           </div>
                           {loc.images?.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-2">
@@ -211,7 +213,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                   </div>
                 ))}
                 {(!ticket.defects || ticket.defects.length === 0) && (
-                  <p className="text-sm text-slate-400">Không có defect nào</p>
+                  <p className="text-sm text-slate-400">{t('Không có defect nào')}</p>
                 )}
               </div>
             </>
@@ -233,7 +235,7 @@ export default function TicketDetailModal({ ticketId, onClose }) {
           <button
             type="button"
             onClick={() => setPreviewUrl(null)}
-            aria-label="Đóng"
+            aria-label={t('Đóng')}
             className="absolute top-4 right-4 text-white text-3xl leading-none hover:opacity-70"
           >
             &times;

@@ -5,6 +5,7 @@ import AddImageTile, { CameraIcon, GalleryIcon } from './AddImageTile'
 import ImageEditorModal from './ImageEditorModal'
 import { uploadImages } from '../api/uploads'
 import { blobToFile } from '../utils/image'
+import { useLanguage } from '../i18n/LanguageContext'
 
 export default function LocationItem({
   location,
@@ -14,6 +15,7 @@ export default function LocationItem({
   onRemove,
   error,
 }) {
+  const { t } = useLanguage()
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [pendingCameraFile, setPendingCameraFile] = useState(null)
@@ -29,7 +31,7 @@ export default function LocationItem({
       const urls = await uploadImages(files)
       onChange({ images: [...location.images, ...urls] })
     } catch (err) {
-      setUploadError(err.message || 'Upload ảnh thất bại')
+      setUploadError(err.message || t('Upload ảnh thất bại'))
     } finally {
       setUploading(false)
     }
@@ -43,21 +45,21 @@ export default function LocationItem({
     <div className="bg-white border border-sky-200 rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
         <span className="inline-block bg-sky-100 text-sky-700 text-xs font-semibold px-2 py-1 rounded">
-          VỊ TRÍ {index + 1}
+          {t('VỊ TRÍ {{n}}', { n: index + 1 })}
         </span>
         <button
           type="button"
           onClick={onRemove}
           className="text-sm text-slate-400 hover:text-brand-red underline"
         >
-          Xoá vị trí
+          {t('Xoá vị trí')}
         </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
         <div>
           <label className="block text-xs font-medium text-slate-500 mb-1">
-            Vị trí (cổ, tay, sườn...)
+            {t('Vị trí (cổ, tay, sườn...)')}
           </label>
           <SearchableSelect
             options={garmentLocationOptions}
@@ -69,12 +71,12 @@ export default function LocationItem({
             allowFreeText
             freeTextValue={location.locationText}
             onFreeTextChange={(text) => onChange({ locationText: text, garmentLocationId: null })}
-            placeholder="Chọn hoặc gõ vị trí"
+            placeholder={t('Chọn hoặc gõ vị trí')}
             error={error?.locationText}
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-500 mb-1">Số lượng</label>
+          <label className="block text-xs font-medium text-slate-500 mb-1">{t('Số lượng')}</label>
           <NumberStepper
             value={location.quantity}
             onChange={(v) => onChange({ quantity: v })}
@@ -106,7 +108,7 @@ export default function LocationItem({
           e.target.value = ''
         }}
       />
-      {uploading && <p className="text-xs text-slate-400 mb-2">Đang tải ảnh lên...</p>}
+      {uploading && <p className="text-xs text-slate-400 mb-2">{t('Đang tải ảnh lên...')}</p>}
       {uploadError && <p className="text-xs text-brand-red mb-2">{uploadError}</p>}
 
       <div className="flex gap-2">
@@ -114,13 +116,13 @@ export default function LocationItem({
           onClick={() => cameraInputRef.current?.click()}
           disabled={uploading}
           icon={<CameraIcon />}
-          label="Chụp ảnh"
+          label={t('Chụp ảnh')}
         />
         <AddImageTile
           onClick={() => galleryInputRef.current?.click()}
           disabled={uploading}
           icon={<GalleryIcon />}
-          label="Thư viện"
+          label={t('Thư viện')}
         />
       </div>
 
@@ -134,7 +136,7 @@ export default function LocationItem({
                 onClick={() => removeImage(url)}
                 className="absolute -top-1.5 -right-1.5 bg-brand-red text-white rounded px-1 text-[10px] leading-4"
               >
-                Xoá
+                {t('Xoá')}
               </button>
             </div>
           ))}

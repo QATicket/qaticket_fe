@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ChangePasswordModal from './ChangePasswordModal'
 import InfoDialog from './InfoDialog'
+import { useLanguage } from '../i18n/LanguageContext'
 
 const NAV_ITEMS = [
   { key: 'form', label: 'Tạo phiếu mới' },
@@ -11,6 +12,7 @@ const NAV_ITEMS = [
 ]
 
 export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapsed, onToggleCollapsed }) {
+  const { lang, toggleLang, t } = useLanguage()
   const isAdmin = userInfo?.role === 'ADMIN'
   const [mobileOpen, setMobileOpen] = useState(false)
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
@@ -28,7 +30,7 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
-          title="Menu"
+          title={t('Menu')}
           className="flex items-center justify-center text-slate-600 border border-slate-300 rounded-md w-9 h-9"
         >
           <svg
@@ -42,8 +44,15 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <span className="font-semibold text-slate-800 text-sm">Garment QA Checking</span>
-        <span className="w-9" />
+        <span className="font-semibold text-slate-800 text-sm">{t('Garment QA Checking')}</span>
+        <button
+          type="button"
+          onClick={toggleLang}
+          title={t('Đổi ngôn ngữ')}
+          className="text-xs font-semibold text-slate-600 border border-slate-300 rounded-md w-9 h-9"
+        >
+          {lang === 'vi' ? 'EN' : 'VI'}
+        </button>
       </div>
 
       {/* Mobile overlay */}
@@ -59,7 +68,7 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
         <button
           type="button"
           onClick={onToggleCollapsed}
-          title="Hiện menu"
+          title={t('Hiện menu')}
           className="hidden sm:flex items-center justify-center fixed top-4 left-4 z-40 w-9 h-9 bg-brand-navy text-white rounded-full hover:bg-brand-navyDark"
         >
           <svg
@@ -86,26 +95,36 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
       >
         <div className="px-5 py-5 border-b border-white/10 flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <h1 className="font-bold text-white text-base leading-tight truncate">Garment QA</h1>
-            <p className="text-xs text-slate-400 mt-0.5">Checking System</p>
+            <h1 className="font-bold text-white text-base leading-tight truncate">{t('Garment QA')}</h1>
+            <p className="text-xs text-slate-400 mt-0.5">{t('Checking System')}</p>
           </div>
-          <button
-            type="button"
-            onClick={onToggleCollapsed}
-            title="Ẩn menu"
-            className="hidden sm:flex items-center justify-center text-slate-300 hover:text-white border border-white/20 rounded-full w-7 h-7 hover:bg-brand-navyLight shrink-0"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={3}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={toggleLang}
+              title={t('Đổi ngôn ngữ')}
+              className="text-xs font-semibold text-slate-300 hover:text-white border border-white/20 rounded-full w-7 h-7 hover:bg-brand-navyLight"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+              {lang === 'vi' ? 'EN' : 'VI'}
+            </button>
+            <button
+              type="button"
+              onClick={onToggleCollapsed}
+              title={t('Ẩn menu')}
+              className="hidden sm:flex items-center justify-center text-slate-300 hover:text-white border border-white/20 rounded-full w-7 h-7 hover:bg-brand-navyLight"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={3}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <nav className="flex-1 py-4 overflow-y-auto">
@@ -113,12 +132,12 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
             item.disabled ? (
               <div
                 key={item.key}
-                title="Tính năng đang phát triển"
+                title={t('Tính năng đang phát triển')}
                 className="w-full flex items-center justify-between gap-2 px-5 py-3 text-sm font-medium text-slate-500 cursor-not-allowed"
               >
-                <span>{item.label}</span>
+                <span>{t(item.label)}</span>
                 <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide bg-white/10 text-slate-400 rounded px-1.5 py-0.5">
-                  Đang phát triển
+                  {t('Đang phát triển')}
                 </span>
               </div>
             ) : (
@@ -132,14 +151,14 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
                     : 'text-slate-300 hover:bg-brand-navyLight/60 hover:text-white'
                 }`}
               >
-                {item.label}
+                {t(item.label)}
               </button>
             ),
           )}
         </nav>
 
         <div className="border-t border-white/10 px-5 py-4 shrink-0">
-          <p className="text-xs text-slate-400">Đăng nhập với</p>
+          <p className="text-xs text-slate-400">{t('Đăng nhập với')}</p>
           <p className="text-sm font-medium text-white truncate">
             {userInfo?.fullName || userInfo?.username}
           </p>
@@ -151,14 +170,14 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
             onClick={() => setChangePasswordOpen(true)}
             className="mt-3 w-full text-sm text-slate-300 hover:text-white border border-white/20 rounded-md py-1.5 hover:bg-brand-navyLight"
           >
-            Đổi mật khẩu
+            {t('Đổi mật khẩu')}
           </button>
           <button
             type="button"
             onClick={onLogout}
             className="mt-2 w-full text-sm text-slate-300 hover:text-white border border-white/20 rounded-md py-1.5 hover:bg-brand-navyLight"
           >
-            Đăng xuất
+            {t('Đăng xuất')}
           </button>
         </div>
       </aside>
@@ -175,7 +194,7 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
 
       {changePasswordSuccess && (
         <InfoDialog
-          message="Đổi mật khẩu thành công."
+          message={t('Đổi mật khẩu thành công.')}
           onClose={() => setChangePasswordSuccess(false)}
         />
       )}

@@ -9,6 +9,13 @@ export async function login(username, password) {
   return data
 }
 
+export async function setLanguage(language) {
+  return apiFetch('/api/auth/language', {
+    method: 'PATCH',
+    body: { language },
+  })
+}
+
 export async function changePassword(oldPassword, newPassword) {
   return apiFetch('/api/auth/change-password', {
     method: 'POST',

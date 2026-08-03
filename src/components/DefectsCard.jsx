@@ -1,5 +1,6 @@
 import DefectItem from './DefectItem'
 import { emptyDefect } from '../utils/id'
+import { useLanguage } from '../i18n/LanguageContext'
 
 export default function DefectsCard({
   defects,
@@ -8,6 +9,7 @@ export default function DefectsCard({
   onChange,
   errors,
 }) {
+  const { t } = useLanguage()
   function updateDefect(localId, patch) {
     onChange(defects.map((d) => (d._localId === localId ? { ...d, ...patch } : d)))
   }
@@ -28,7 +30,7 @@ export default function DefectsCard({
             {defects.length}
           </span>
           <h2 className="font-semibold text-slate-700">
-            Defects (Lỗi) — Chi Tiết Các Lỗi Phát Hiện Trên Chuyền
+            {t('Defects (Lỗi) — Chi Tiết Các Lỗi Phát Hiện Trên Chuyền')}
           </h2>
         </div>
         <button
@@ -59,7 +61,7 @@ export default function DefectsCard({
         ))}
         {defects.length === 0 && (
           <p className="text-sm text-slate-400 text-center py-6">
-            Chưa có defect nào. Bấm "+ Add Defect" để thêm.
+            {t('Chưa có defect nào. Bấm "+ Add Defect" để thêm.')}
           </p>
         )}
       </div>

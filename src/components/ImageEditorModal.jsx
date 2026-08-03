@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 
 const MAX_DIMENSION = 1600
 const COLORS = ['#ef4444', '#111827', '#facc15']
@@ -10,6 +11,7 @@ function clamp(v, min, max) {
 }
 
 export default function ImageEditorModal({ file, onCancel, onConfirm }) {
+  const { t } = useLanguage()
   const canvasRef = useRef(null)
   const [ready, setReady] = useState(false)
   const [tool, setTool] = useState('crop')
@@ -223,15 +225,15 @@ export default function ImageEditorModal({ file, onCancel, onConfirm }) {
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-3">
       <div className="bg-white rounded-lg w-full max-w-lg flex flex-col max-h-[92vh]">
         <div className="flex items-center justify-between p-3 border-b border-slate-200">
-          <span className="font-semibold text-sm text-slate-700">Chỉnh sửa ảnh</span>
+          <span className="font-semibold text-sm text-slate-700">{t('Chỉnh sửa ảnh')}</span>
           <div className="flex gap-1">
-            <ToolButton active={tool === 'crop'} onClick={() => setTool('crop')} label="Cắt ảnh" />
-            <ToolButton active={tool === 'draw'} onClick={() => setTool('draw')} label="Vẽ" />
+            <ToolButton active={tool === 'crop'} onClick={() => setTool('crop')} label={t('Cắt ảnh')} />
+            <ToolButton active={tool === 'draw'} onClick={() => setTool('draw')} label={t('Vẽ')} />
           </div>
         </div>
 
         <div className="relative flex-1 overflow-auto bg-slate-100 p-3 flex items-center justify-center">
-          {!ready && <span className="text-xs text-slate-400">Đang tải ảnh...</span>}
+          {!ready && <span className="text-xs text-slate-400">{t('Đang tải ảnh...')}</span>}
           <div className="relative" style={{ touchAction: 'none' }}>
             <canvas
               ref={canvasRef}
@@ -263,7 +265,7 @@ export default function ImageEditorModal({ file, onCancel, onConfirm }) {
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  aria-label={`Màu ${c}`}
+                  aria-label={t('Màu {{color}}', { color: c })}
                   className={`w-6 h-6 rounded-full border-2 ${
                     color === c ? 'border-brand-navy' : 'border-slate-200'
                   }`}
@@ -288,7 +290,7 @@ export default function ImageEditorModal({ file, onCancel, onConfirm }) {
               onClick={applyCrop}
               className="text-xs font-medium border border-slate-300 rounded-md px-3 py-1.5 hover:bg-slate-50"
             >
-              Áp dụng cắt
+              {t('Áp dụng cắt')}
             </button>
           </div>
         )}
@@ -300,7 +302,7 @@ export default function ImageEditorModal({ file, onCancel, onConfirm }) {
             disabled={!canUndo}
             className="text-xs font-medium text-slate-500 hover:text-brand-navy disabled:opacity-40"
           >
-            Hoàn tác
+            {t('Hoàn tác')}
           </button>
           <div className="flex gap-2">
             <button
@@ -308,7 +310,7 @@ export default function ImageEditorModal({ file, onCancel, onConfirm }) {
               onClick={onCancel}
               className="text-sm font-medium border border-slate-300 rounded-md px-4 py-2 hover:bg-slate-50"
             >
-              Huỷ
+              {t('Huỷ')}
             </button>
             <button
               type="button"
@@ -316,7 +318,7 @@ export default function ImageEditorModal({ file, onCancel, onConfirm }) {
               disabled={!ready}
               className="text-sm font-semibold bg-brand-navy text-white rounded-md px-4 py-2 hover:opacity-90 disabled:opacity-50"
             >
-              Dùng ảnh này
+              {t('Dùng ảnh này')}
             </button>
           </div>
         </div>
