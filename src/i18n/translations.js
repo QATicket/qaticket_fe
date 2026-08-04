@@ -110,6 +110,7 @@ export const en = {
 
   // -- GeneralInfoCard --
   'Upload ảnh thất bại': 'Image upload failed',
+  '{{n}} ảnh không đọc được, vui lòng thử ảnh khác': '{{n}} image(s) could not be read, please try another image',
   'QA Name (Nhân viên QA)': 'QA Name',
   'Factory (Nhà máy)': 'Factory',
   'Chọn nhà máy': 'Select factory',

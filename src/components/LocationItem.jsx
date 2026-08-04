@@ -3,8 +3,9 @@ import SearchableSelect from './SearchableSelect'
 import NumberStepper from './NumberStepper'
 import AddImageTile, { CameraIcon, GalleryIcon } from './AddImageTile'
 import ImageEditorModal from './ImageEditorModal'
+import ImageLightbox from './ImageLightbox'
 import { uploadImages } from '../api/uploads'
-import { blobToFile } from '../utils/image'
+import { blobToFile, convertImageToJpeg } from '../utils/image'
 import { useLanguage } from '../i18n/LanguageContext'
 
 export default function LocationItem({
@@ -19,6 +20,7 @@ export default function LocationItem({
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [pendingCameraFile, setPendingCameraFile] = useState(null)
+  const [previewUrl, setPreviewUrl] = useState(null)
   const cameraInputRef = useRef(null)
   const galleryInputRef = useRef(null)
 
@@ -28,8 +30,16 @@ export default function LocationItem({
     setUploading(true)
     setUploadError('')
     try {
-      const urls = await uploadImages(files)
-      onChange({ images: [...location.images, ...urls] })
+      const results = await Promise.allSettled(files.map((f) => convertImageToJpeg(f)))
+      const converted = results.filter((r) => r.status === 'fulfilled').map((r) => r.value)
+      const failedCount = results.length - converted.length
+      if (converted.length > 0) {
+        const urls = await uploadImages(converted)
+        onChange({ images: [...location.images, ...urls] })
+      }
+      if (failedCount > 0) {
+        setUploadError(t('{{n}} ảnh không đọc được, vui lòng thử ảnh khác', { n: failedCount }))
+      }
     } catch (err) {
       setUploadError(err.message || t('Upload ảnh thất bại'))
     } finally {
@@ -130,7 +140,9 @@ export default function LocationItem({
         <div className="flex flex-wrap gap-2 mt-2">
           {location.images.map((url) => (
             <div key={url} className="relative w-16 h-16">
-              <img src={url} alt="" className="w-16 h-16 object-cover rounded-md border border-slate-200" />
+              <button type="button" onClick={() => setPreviewUrl(url)} className="block w-16 h-16">
+                <img src={url} alt="" className="w-16 h-16 object-cover rounded-md border border-slate-200" />
+              </button>
               <button
                 type="button"
                 onClick={() => removeImage(url)}
@@ -142,6 +154,8 @@ export default function LocationItem({
           ))}
         </div>
       )}
+
+      <ImageLightbox url={previewUrl} onClose={() => setPreviewUrl(null)} />
 
       {pendingCameraFile && (
         <ImageEditorModal
