@@ -135,7 +135,7 @@ export default function QaDashboard({ userInfo }) {
     <div className="min-h-screen py-6 px-3 sm:px-6">
       <div className="max-w-6xl mx-auto space-y-4">
         <div className="bg-white rounded-xl shadow-sm p-4">
-          <h1 className="text-lg font-bold text-slate-800 mb-3">{t('Dashboard QA')}</h1>
+          <h1 className="text-lg font-bold text-slate-800 mb-3">{t('Thống kê QA')}</h1>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">{t('Nhà máy')}</label>

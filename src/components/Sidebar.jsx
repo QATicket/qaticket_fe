@@ -7,7 +7,8 @@ const NAV_ITEMS = [
   { key: 'form', label: 'Tạo phiếu mới' },
   { key: 'list', label: 'Danh sách phiếu' },
   { key: 'staff', label: 'Quản lý nhân viên', adminOnly: true },
-  { key: 'dashboard', label: 'Dashboard' },
+  { key: 'catalog', label: 'Quản lý danh mục', adminOnly: true },
+  { key: 'dashboard', label: 'Thống kê' },
   { key: 'docs', label: 'Tài liệu tham khảo', disabled: true },
 ]
 

@@ -3,6 +3,7 @@ import LoginPage from './components/LoginPage'
 import QaTicketFormPage from './components/QaTicketFormPage'
 import TicketListPage from './components/TicketListPage'
 import StaffManagementPage from './components/StaffManagementPage'
+import CatalogManagementPage from './components/CatalogManagementPage'
 import QaDashboard from './components/QaDashboard'
 import Sidebar from './components/Sidebar'
 import WorkshopWatermark from './components/WorkshopWatermark'
@@ -90,6 +91,8 @@ export default function App() {
           />
         ) : view === 'staff' ? (
           <StaffManagementPage />
+        ) : view === 'catalog' ? (
+          <CatalogManagementPage />
         ) : view === 'dashboard' ? (
           <QaDashboard userInfo={userInfo} />
         ) : (

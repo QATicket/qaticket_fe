@@ -7,7 +7,8 @@ export const en = {
   'Tạo phiếu mới': 'New Ticket',
   'Danh sách phiếu': 'Ticket List',
   'Quản lý nhân viên': 'Staff Management',
-  Dashboard: 'Dashboard',
+  'Quản lý danh mục': 'Catalog Management',
+  'Thống kê': 'Dashboard',
   'Tài liệu tham khảo': 'Reference Docs',
   Menu: 'Menu',
   'Garment QA Checking': 'Garment QA Checking',
@@ -39,7 +40,7 @@ export const en = {
   // -- QaDashboard --
   'Chưa có dữ liệu': 'No data yet',
   'Không tải được dữ liệu dashboard': 'Failed to load dashboard data',
-  'Dashboard QA': 'QA Dashboard',
+  'Thống kê QA': 'QA Dashboard',
   'Nhà máy': 'Factory',
   'Tất cả': 'All',
   'Nhân viên': 'Staff',
@@ -259,4 +260,57 @@ export const en = {
   // -- SearchableSelect --
   'Chọn...': 'Select...',
   'Không có kết quả': 'No results',
+
+  // -- CatalogManagementPage --
+  'Nhóm lỗi': 'Defect Group',
+  'Lỗi chi tiết': 'Defect Item',
+  'Vị trí trên sản phẩm': 'Garment Location',
+
+  // -- DefectManagementTab --
+  'Nhóm lỗi dùng làm danh mục cha cho các lỗi chi tiết.':
+    'Defect groups are the parent category for detailed defect items.',
+  'Không tải được danh sách nhóm lỗi': 'Failed to load defect group list',
+  '+ Thêm nhóm lỗi': '+ Add Defect Group',
+  'Mã': 'Code',
+  'Tên (Tiếng Việt)': 'Name (Vietnamese)',
+  'Tên (Tiếng Anh)': 'Name (English)',
+  'Chưa có nhóm lỗi nào': 'No defect groups yet',
+
+  // -- DefectFormModal --
+  'Vui lòng nhập tên lỗi (tiếng Việt)': 'Please enter the defect name (Vietnamese)',
+  'Lưu nhóm lỗi thất bại': 'Failed to save defect group',
+  'Sửa nhóm lỗi': 'Edit Defect Group',
+  'Thêm nhóm lỗi': 'Add Defect Group',
+  'Mã lỗi': 'Code',
+  'Đang lưu...': 'Saving...',
+  'Lưu': 'Save',
+
+  // -- DefectItemManagementTab --
+  'Lỗi chi tiết thuộc về 1 nhóm lỗi, dùng trong danh sách chọn lỗi khi tạo phiếu.':
+    'Defect items belong to a defect group and are used in the defect picker when creating a ticket.',
+  'Không tải được danh sách lỗi chi tiết': 'Failed to load defect item list',
+  '+ Thêm lỗi chi tiết': '+ Add Defect Item',
+  'Chưa có lỗi chi tiết nào': 'No defect items yet',
+
+  // -- DefectItemFormModal --
+  'Vui lòng chọn nhóm lỗi': 'Please select a defect group',
+  'Lưu lỗi chi tiết thất bại': 'Failed to save defect item',
+  'Sửa lỗi chi tiết': 'Edit Defect Item',
+  'Thêm lỗi chi tiết': 'Add Defect Item',
+  'Cho phép Minor': 'Allow Minor',
+  'Cho phép Major': 'Allow Major',
+
+  // -- GarmentLocationManagementTab --
+  'Không tải được danh sách loại sản phẩm': 'Failed to load garment type list',
+  'Không tải được danh sách vị trí': 'Failed to load location list',
+  '+ Thêm vị trí': '+ Add Location',
+  'Tên vị trí': 'Location Name',
+  'Chưa có vị trí nào': 'No locations yet',
+
+  // -- GarmentLocationFormModal --
+  'Vui lòng chọn loại sản phẩm': 'Please select a garment type',
+  'Vui lòng nhập tên vị trí': 'Please enter a location name',
+  'Lưu vị trí thất bại': 'Failed to save location',
+  'Sửa vị trí': 'Edit Location',
+  'Thêm vị trí': 'Add Location',
 }

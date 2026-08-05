@@ -266,12 +266,16 @@ function drawInspectionPointsSection(doc, startY, ticket) {
 
   const categories = groupDefectsForPdf(ticket)
   const body = []
+  let totalMajor = 0
+  let totalMinor = 0
   if (categories.size === 0) {
     body.push([{ content: 'No defects', colSpan: 4, styles: { fontStyle: 'normal', textColor: 130 } }])
   }
   for (const category of categories.values()) {
     body.push([{ content: category.name, colSpan: 4, styles: { fontStyle: 'bold', fillColor: [254, 226, 226] } }])
     for (const item of category.items) {
+      if (item.severity === 'MAJOR') totalMajor += item.qty
+      else totalMinor += item.qty
       body.push([
         item.itemName,
         item.severity === 'MAJOR' ? String(item.qty) : '',
@@ -280,6 +284,13 @@ function drawInspectionPointsSection(doc, startY, ticket) {
       ])
     }
   }
+  const totalRowStyles = { fontStyle: 'bold', fillColor: [226, 232, 240], textColor: 20 }
+  body.push([
+    { content: 'Total', styles: totalRowStyles },
+    { content: String(totalMajor), styles: { ...totalRowStyles, halign: 'center' } },
+    { content: String(totalMinor), styles: { ...totalRowStyles, halign: 'center' } },
+    { content: '', styles: totalRowStyles },
+  ])
 
   autoTable(doc, {
     startY: tableStartY,
