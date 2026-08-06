@@ -49,7 +49,7 @@ export const QC_CHECKLIST_GROUPS = [
   },
   {
     id: 'labels-appearance',
-    title: 'Labels & APPEARANCE',
+    title: '4. Labels & Appearance',
     checkCol: 7, // G
     rejectCol: 8, // H
     items: [
@@ -73,20 +73,63 @@ export const QC_CHECKLIST_GROUPS = [
       { id: 'box-size-qlty', label: 'Box size & qlty - CL và size thùng', row: 14 },
       { id: 'box-end-label', label: 'Box end label - Nhãn thùng', row: 15 },
       { id: 'gross-weight', label: 'Gross weight < 15Kg', row: 16 },
+      { id: 'gross-weight-22kg', label: 'Gross weight < 22Kg', row: 21 },
       { id: 'sealing-tape', label: 'Sealing tape - Keo dán thùng', row: 17 },
       { id: 'ration-pack-sticker', label: 'Ration pack sticker - Tỷ lệ trên nhãn', row: 18 },
       { id: 'flat-packed', label: 'Flat Packed - Đóng phẳng', row: 19 },
       { id: 'hanging-goods', label: 'Hanging goods - Hàng treo', row: 20 },
+      { id: 'box-hanger', label: 'Box hanger - Hàng treo dạng hộp', row: 22 },
     ],
   },
 ]
 
-// Mặc định mọi tiêu chí đạt (v) - giống giá trị tĩnh có sẵn trong template gốc.
+// Mặc định để trống, người dùng tự tick v/x - không ép sẵn giá trị nào.
 export function defaultQcChecklistValues() {
   const values = {}
   for (const group of QC_CHECKLIST_GROUPS) {
     for (const item of group.items) {
-      values[item.id] = 'v'
+      values[item.id] = null
+    }
+  }
+  return values
+}
+
+// Vùng chọn 1-trong-2, nằm ngoài vùng MATERIALS (8-24) - gần bảng AQL Result,
+// dòng 109-114 sheet "Main Report (2)". Đã kiểm tra file .xlsx gốc: không có
+// checkbox form control thật (không có drawing/vmlDrawing nào trỏ tới các ô
+// này) - A109/A111/A113/A114 chỉ là ô Boolean thường. Quy ước: ghi TRUE vào ô
+// của lựa chọn được chọn, để trống (null) ô còn lại và cả 2 ô khi chưa chọn.
+export const QC_CHOICE_GROUPS = [
+  {
+    id: 'packing-shipment',
+    title: '6. Packing Method & Shipment - PT đóng gói & Vận chuyển',
+    items: [
+      {
+        id: 'packing-method',
+        label: 'Packing method',
+        options: [
+          { id: 'hanging-goods-choice', label: 'Hanging Goods', cell: 'A111' },
+          { id: 'flat-packed-choice', label: 'Flat Packed', cell: 'A109' },
+        ],
+      },
+      {
+        id: 'shipment-mode',
+        label: 'Shipment mode',
+        options: [
+          { id: 'air', label: 'Air', cell: 'A114' },
+          { id: 'sea', label: 'Sea', cell: 'A113' },
+        ],
+      },
+    ],
+  },
+]
+
+// Mặc định để trống - chưa chọn Hanging Goods/Flat Packed hay Air/Sea.
+export function defaultQcChoiceValues() {
+  const values = {}
+  for (const group of QC_CHOICE_GROUPS) {
+    for (const item of group.items) {
+      values[item.id] = null
     }
   }
   return values

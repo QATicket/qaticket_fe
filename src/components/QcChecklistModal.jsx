@@ -1,13 +1,29 @@
 import { useState } from 'react'
-import { QC_CHECKLIST_GROUPS, defaultQcChecklistValues } from '../utils/qcChecklist'
+import {
+  QC_CHECKLIST_GROUPS,
+  QC_CHOICE_GROUPS,
+  defaultQcChecklistValues,
+  defaultQcChoiceValues,
+} from '../utils/qcChecklist'
 import { useLanguage } from '../i18n/LanguageContext'
 
 export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'Excel' }) {
   const { t } = useLanguage()
-  const [values, setValues] = useState(() => defaultQcChecklistValues())
+  const [values, setValues] = useState(() => ({
+    ...defaultQcChecklistValues(),
+    ...defaultQcChoiceValues(),
+  }))
 
   function setItemValue(itemId, value) {
     setValues((prev) => ({ ...prev, [itemId]: value }))
+  }
+
+  // Chèn mục 6 (chọn 1-trong-2) ngay sau "Packing" để nằm cùng hàng, bên
+  // phải mục 5 trong lưới 2 cột (packing là item cuối của QC_CHECKLIST_GROUPS).
+  const gridGroups = []
+  for (const group of QC_CHECKLIST_GROUPS) {
+    gridGroups.push(group)
+    if (group.id === 'packing') gridGroups.push(...QC_CHOICE_GROUPS)
   }
 
   return (
@@ -32,48 +48,80 @@ export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'E
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {QC_CHECKLIST_GROUPS.map((group) => (
-              <div key={group.id} className="border border-slate-200 rounded-md p-3">
-                <h3 className="text-sm font-semibold text-slate-700 mb-2">{group.title}</h3>
-                <div className="space-y-1.5">
-                  {group.items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between gap-2">
-                      <span className="text-sm text-slate-600">{item.label}</span>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => setItemValue(item.id, 'v')}
-                          title={t('Đạt')}
-                          aria-label={t('Đạt')}
-                          aria-pressed={values[item.id] === 'v'}
-                          className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors ${
-                            values[item.id] === 'v'
-                              ? 'bg-green-600 border-green-600 text-white'
-                              : 'bg-white border-slate-300 text-slate-300 hover:border-green-500 hover:text-green-500'
-                          }`}
-                        >
-                          <CheckIcon />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setItemValue(item.id, 'x')}
-                          title={t('Không đạt')}
-                          aria-label={t('Không đạt')}
-                          aria-pressed={values[item.id] === 'x'}
-                          className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors ${
-                            values[item.id] === 'x'
-                              ? 'bg-brand-red border-brand-red text-white'
-                              : 'bg-white border-slate-300 text-slate-300 hover:border-brand-red hover:text-brand-red'
-                          }`}
-                        >
-                          <XIcon />
-                        </button>
+            {gridGroups.map((group) =>
+              group.items[0]?.options ? (
+                <div key={group.id} className="border border-slate-200 rounded-md p-3">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-2">{group.title}</h3>
+                  <div className="space-y-2">
+                    {group.items.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between gap-2">
+                        <span className="text-sm text-slate-600">{item.label}</span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {item.options.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() =>
+                                setItemValue(item.id, values[item.id] === option.id ? null : option.id)
+                              }
+                              aria-pressed={values[item.id] === option.id}
+                              className={`px-3 h-7 rounded-full text-xs font-medium border transition-colors ${
+                                values[item.id] === option.id
+                                  ? 'bg-brand-navy border-brand-navy text-white'
+                                  : 'bg-white border-slate-300 text-slate-500 hover:border-brand-navy hover:text-brand-navy'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ) : (
+                <div key={group.id} className="border border-slate-200 rounded-md p-3">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-2">{group.title}</h3>
+                  <div className="space-y-1.5">
+                    {group.items.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between gap-2">
+                        <span className="text-sm text-slate-600">{item.label}</span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setItemValue(item.id, 'v')}
+                            title={t('Đạt')}
+                            aria-label={t('Đạt')}
+                            aria-pressed={values[item.id] === 'v'}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors ${
+                              values[item.id] === 'v'
+                                ? 'bg-green-600 border-green-600 text-white'
+                                : 'bg-white border-slate-300 text-slate-300 hover:border-green-500 hover:text-green-500'
+                            }`}
+                          >
+                            <CheckIcon />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setItemValue(item.id, 'x')}
+                            title={t('Không đạt')}
+                            aria-label={t('Không đạt')}
+                            aria-pressed={values[item.id] === 'x'}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors ${
+                              values[item.id] === 'x'
+                                ? 'bg-brand-red border-brand-red text-white'
+                                : 'bg-white border-slate-300 text-slate-300 hover:border-brand-red hover:text-brand-red'
+                            }`}
+                          >
+                            <XIcon />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ),
+            )}
           </div>
         </div>
 

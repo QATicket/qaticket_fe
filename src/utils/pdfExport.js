@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { getQaTicket } from '../api/qaTickets'
-import { QC_CHECKLIST_GROUPS, defaultQcChecklistValues } from './qcChecklist'
+import { QC_CHECKLIST_GROUPS, QC_CHOICE_GROUPS, defaultQcChecklistValues } from './qcChecklist'
 import { buildExportFilename } from './excelExport'
 
 // Layout PDF theo mẫu công ty (NHA BE CORPORATION): 5 phần nối tiếp trong 1 file,
@@ -211,9 +211,22 @@ function drawMaterialsSection(doc, startY, qcChecklistValues) {
       body.push([{ content: group.title, colSpan: 3, styles: { fontStyle: 'bold', fillColor: [230, 230, 230] } }])
       group.items.forEach((item) => {
         const v = values[item.id]
-        body.push([item.label, v === 'x' ? '' : 'V', v === 'x' ? 'X' : ''])
+        body.push([item.label, v === 'v' ? 'V' : '', v === 'x' ? 'X' : ''])
       })
     })
+
+    // Mục 6 (Packing Method & Shipment - chọn 1-trong-2) chỉ đặt ở cột cuối,
+    // ngay dưới nhóm Packing, dùng chung layout 3 cột bảng con này.
+    if (colIndex === MATERIALS_COLUMNS.length - 1) {
+      QC_CHOICE_GROUPS.forEach((group) => {
+        body.push([{ content: group.title, colSpan: 3, styles: { fontStyle: 'bold', fillColor: [230, 230, 230] } }])
+        group.items.forEach((item) => {
+          const selected = values[item.id]
+          const selectedLabel = item.options.find((o) => o.id === selected)?.label || ''
+          body.push([item.label, { content: selectedLabel, colSpan: 2 }])
+        })
+      })
+    }
 
     autoTable(doc, {
       startY: tableStartY,

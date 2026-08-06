@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs'
 import { getQaTicket } from '../api/qaTickets'
-import { QC_CHECKLIST_GROUPS } from './qcChecklist'
+import { QC_CHECKLIST_GROUPS, QC_CHOICE_GROUPS } from './qcChecklist'
 
 // Xem src/CLAUDE.md (mục "CẬP NHẬT (v2)") - đây là bản JS port 1:1 của
 // fill_qa_report.py, chạy trong trình duyệt thay vì Python/openpyxl.
@@ -29,6 +29,15 @@ const GROSS_WEIGHT_CONDITIONAL_REF = 'L16'
 
 // M3_checkbox (xem Header mapping.md): TRUE nếu chọn AQL 2.5, FALSE nếu AQL 1.5.
 const AQL_LEVEL_CELL = 'M3'
+// K3 (merge K3:L3) - nhãn hiển thị "AQL 1.5"/"AQL 2.5" cạnh checkbox M3.
+const AQL_LEVEL_LABEL_CELL = 'K3'
+
+// B105/B106/B107 - ô trống cạnh nhãn "Pass - Đạt/Rejected - K.đạt/Pending -
+// Treo" (cột A cùng dòng), tô màu theo ticket.inspectionResult (PASS/
+// REJECTED/PENDING - xem InspectionResultBadge.jsx).
+const AQL_RESULT_CELLS = { PASS: 'B105', REJECTED: 'B106', PENDING: 'B107' }
+// Màu style "Good/Bad/Neutral" chuẩn của Excel.
+const AQL_RESULT_FILL_ARGB = { PASS: 'FFC6EFCE', REJECTED: 'FFFFC7CE', PENDING: 'FFFFEB9C' }
 
 // B3 (dòng "Loại kiểm tra") - ghi thẳng giá trị inspectionStage của ticket.
 const MAIN_REPORT_INSPECTION_STAGE_CELL = 'B3'
@@ -137,10 +146,26 @@ function writeQcChecklist(ws, qcChecklistValues) {
       const value = qcChecklistValues[item.id]
       const checkCell = ws.getCell(item.row, group.checkCol)
       const rejectCell = ws.getCell(item.row, group.rejectCol)
-      checkCell.value = value === 'x' ? null : 'v'
+      checkCell.value = value === 'v' ? 'v' : null
       rejectCell.value = value === 'x' ? 'x' : null
       checkCell.alignment = { horizontal: 'center', vertical: 'middle' }
       rejectCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    }
+  }
+}
+
+// Ghi lựa chọn 1-trong-2 (Hanging Goods/Flat Packed, Air/Sea - xem
+// QC_CHOICE_GROUPS trong qcChecklist.js) vào các ô A109/A111/A113/A114: TRUE
+// cho ô của lựa chọn được chọn, FALSE cho ô còn lại (kể cả khi người dùng
+// chưa chọn gì ở mục này thì cả 2 ô đều là FALSE).
+function writeQcChoiceValues(ws, qcChecklistValues) {
+  if (!qcChecklistValues) return
+  for (const group of QC_CHOICE_GROUPS) {
+    for (const item of group.items) {
+      const selected = qcChecklistValues[item.id]
+      for (const option of item.options) {
+        ws.getCell(option.cell).value = option.id === selected
+      }
     }
   }
 }
@@ -200,8 +225,27 @@ function writeHeaderValues(ws, ticket) {
 }
 
 function writeAqlLevelCell(ws, ticket) {
-  if (!ticket?.aqlLevel) return
-  ws.getCell(AQL_LEVEL_CELL).value = ticket.aqlLevel === '2.5'
+  const level = ticket?.aqlLevel
+  // Không ghi TRUE/FALSE vào checkbox M3 nữa (dù có AQL hay không) - chỉ để
+  // trống hoặc ghi nhãn "AQL 1.5"/"AQL 2.5" vào K3.
+  ws.getCell(AQL_LEVEL_CELL).value = null
+  ws.getCell(AQL_LEVEL_LABEL_CELL).value = level === '1.5' || level === '2.5' ? `AQL ${level}` : null
+}
+
+function writeAqlResultCell(ws, ticket) {
+  const result = ticket?.inspectionResult
+  for (const [key, address] of Object.entries(AQL_RESULT_CELLS)) {
+    const cell = ws.getCell(address)
+    const fill =
+      key === result
+        ? { type: 'pattern', pattern: 'solid', fgColor: { argb: AQL_RESULT_FILL_ARGB[key] } }
+        : { type: 'pattern', pattern: 'solid', fgColor: { theme: 0 }, bgColor: { theme: 0 } }
+    // B105/B106/B107 dùng chung 1 style object trong file mẫu gốc (ExcelJS
+    // intern style giống nhau) - gán thẳng cell.fill = ... sẽ mutate object
+    // dùng chung đó, khiến 2 ô còn lại bị đổi màu theo. Phải gán qua
+    // cell.style = {...} để tách style riêng cho từng ô.
+    cell.style = { ...cell.style, fill }
+  }
 }
 
 function writeInspectionStageCell(ws, cellAddress, ticket) {
@@ -631,7 +675,9 @@ export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistVal
   writeInspectionStageCell(ws, MAIN_REPORT_INSPECTION_STAGE_CELL, tickets[0])
   writeTitleCell(ws)
   writeAqlLevelCell(ws, tickets[0])
+  writeAqlResultCell(ws, tickets[0])
   writeQcChecklist(ws, qcChecklistValues)
+  writeQcChoiceValues(ws, qcChecklistValues)
 
   const aggregated = aggregateDefects(tickets)
   const { overflow } = writeDefectRows(ws, aggregated)
