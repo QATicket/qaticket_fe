@@ -270,19 +270,12 @@ export default function GeneralInfoCard({
           <label className="block text-xs font-medium text-slate-500 mb-2">
             {t('Upload hình ảnh duyệt (Spec Images)')}
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <MultiImageUpload
               label={t('Mẫu duyệt (Approved Sample)')}
               urls={form.specImages?.APPROVED_SAMPLE || []}
               onChange={(urls) =>
                 onChange({ specImages: { ...form.specImages, APPROVED_SAMPLE: urls } })
-              }
-            />
-            <MultiImageUpload
-              label={t('Bảng thông số kích thước')}
-              urls={form.specImages?.SIZE_SPEC || []}
-              onChange={(urls) =>
-                onChange({ specImages: { ...form.specImages, SIZE_SPEC: urls } })
               }
             />
             <MultiImageUpload

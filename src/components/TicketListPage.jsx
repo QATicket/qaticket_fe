@@ -3,6 +3,7 @@ import { listQaTickets, deleteQaTicket, exportQaTicket, unexportQaTicket } from 
 import { getFactories, getAllStaff } from '../api/master'
 import { exportTicketPdf } from '../utils/pdfExport'
 import { exportTicketsExcel } from '../utils/excelExport'
+import { exportTicketPdfExcelStyle } from '../utils/pdfExportExcelStyle'
 import TicketRowActions from './TicketRowActions'
 import TicketDetailModal from './TicketDetailModal'
 import ExportProgressModal from './ExportProgressModal'
@@ -162,6 +163,18 @@ export default function TicketListPage({ userInfo, onEdit }) {
     setQcChecklistTicket(ticket)
   }
 
+  // Tính năng riêng "Xuất PDF giống Excel" (xem pdfExportExcelStyle.js) - đi
+  // qua cùng QcChecklistModal để lấy v/x Materials thật, giống flow pdf/excel.
+  function handleExportPdfExcelStyle(ticket) {
+    if (ticket.exported && !isAdmin) {
+      setError(t('Phiếu này đã được xuất, không thể xuất lại'))
+      return
+    }
+    setError('')
+    setQcChecklistMode('pdf-excel-style')
+    setQcChecklistTicket(ticket)
+  }
+
   async function handleConfirmQcChecklist(qcChecklistValues) {
     const ticket = qcChecklistTicket
     const mode = qcChecklistMode
@@ -173,6 +186,20 @@ export default function TicketListPage({ userInfo, onEdit }) {
       setPdfProgress(t('Đang chuẩn bị...'))
       try {
         await exportTicketPdf(ticket.id, { onProgress: setPdfProgress, qcChecklistValues })
+        await markExported(ticket)
+      } catch (err) {
+        setError(err.message || t('Xuất PDF thất bại'))
+      } finally {
+        setBusyId(null)
+        setPdfProgress('')
+      }
+      return
+    }
+
+    if (mode === 'pdf-excel-style') {
+      setPdfProgress(t('Đang chuẩn bị...'))
+      try {
+        await exportTicketPdfExcelStyle(ticket.id, { onProgress: setPdfProgress, qcChecklistValues })
         await markExported(ticket)
       } catch (err) {
         setError(err.message || t('Xuất PDF thất bại'))
@@ -419,6 +446,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
                       onEdit={() => onEdit(row.id)}
                       onExportPdf={() => handleExportPdf(row)}
                       onExportExcel={() => handleExportExcel(row)}
+                      onExportPdfExcelStyle={() => handleExportPdfExcelStyle(row)}
                       onUnexport={() => handleUnexport(row)}
                       onDelete={() => handleDelete(row.id)}
                     />
@@ -460,7 +488,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
 
       {qcChecklistTicket && (
         <QcChecklistModal
-          exportLabel={qcChecklistMode === 'pdf' ? 'PDF' : 'Excel'}
+          exportLabel={qcChecklistMode === 'excel' ? 'Excel' : 'PDF'}
           onConfirm={handleConfirmQcChecklist}
           onCancel={() => setQcChecklistTicket(null)}
         />

@@ -240,6 +240,7 @@ export const en = {
   'Phiếu đã xuất, không thể xuất lại': 'Ticket already exported, cannot export again',
   'Xuất PDF': 'Export PDF',
   'Xuất Excel': 'Export Excel',
+  'Xuất PDF giống Excel': 'Export PDF (Excel-like)',
   'Cho phép xuất lại': 'Allow re-export',
 
   // -- ImageEditorModal --

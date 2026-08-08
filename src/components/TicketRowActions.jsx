@@ -10,6 +10,7 @@ export default function TicketRowActions({
   onEdit,
   onExportPdf,
   onExportExcel,
+  onExportPdfExcelStyle,
   onUnexport,
   onDelete,
 }) {
@@ -94,15 +95,20 @@ export default function TicketRowActions({
             >
               {t('Sửa')}
             </button>
-            <button
-              type="button"
-              disabled={busy || (ticket.exported && !isAdmin)}
-              title={ticket.exported && !isAdmin ? t('Phiếu đã xuất, không thể xuất lại') : undefined}
-              onClick={() => runAndClose(onExportPdf)}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
-            >
-              {t('Xuất PDF')}
-            </button>
+            {/* Tạm ẩn nút "Xuất PDF" cũ theo yêu cầu - nút "Xuất PDF giống Excel"
+                bên dưới đã đổi tên thành "Xuất PDF" để thay thế. Giữ nguyên
+                code này (chỉ comment) để khôi phục lại dễ dàng khi cần. */}
+            {false && (
+              <button
+                type="button"
+                disabled={busy || (ticket.exported && !isAdmin)}
+                title={ticket.exported && !isAdmin ? t('Phiếu đã xuất, không thể xuất lại') : undefined}
+                onClick={() => runAndClose(onExportPdf)}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
+              >
+                {t('Xuất PDF')}
+              </button>
+            )}
             <button
               type="button"
               disabled={busy || (ticket.exported && !isAdmin)}
@@ -111,6 +117,15 @@ export default function TicketRowActions({
               className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
             >
               {t('Xuất Excel')}
+            </button>
+            <button
+              type="button"
+              disabled={busy || (ticket.exported && !isAdmin)}
+              title={ticket.exported && !isAdmin ? t('Phiếu đã xuất, không thể xuất lại') : undefined}
+              onClick={() => runAndClose(onExportPdfExcelStyle)}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
+            >
+              {t('Xuất PDF')}
             </button>
             {isAdmin && ticket.exported && (
               <button
