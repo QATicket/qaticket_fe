@@ -1,8 +1,14 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { getQaTicket } from '../api/qaTickets'
-import { QC_CHECKLIST_GROUPS, QC_CHOICE_GROUPS } from './qcChecklist'
+import {
+  QC_CHECKLIST_GROUPS,
+  QC_CHOICE_GROUPS,
+  AQL_PENDING_FLAG_KEY,
+  AQL_PENDING_REASON_KEY,
+} from './qcChecklist'
 import { buildExportFilename } from './excelExport'
+import { AQL_SAMPLING_TABLE, lookupAqlThresholds, resolveAqlResult } from './aqlResult'
 
 // TÍNH NĂNG RIÊNG, TÁCH BIỆT HOÀN TOÀN với pdfExport.js/excelExport.js - chỉ
 // import các hằng số/hàm thuần (QC_CHECKLIST_GROUPS, QC_CHOICE_GROUPS,
@@ -130,22 +136,6 @@ const INSPECTION_STAGE_TITLE_LABELS = {
   PACKING: { en: 'Packing', vi: 'PACKING' },
 }
 
-// B95:P103 của template - bảng tra Ac(chấp nhận)/Re(từ chối) theo Sample size,
-// giống hệt cho AQL 2.5 và 1.5 NGOẠI TRỪ dòng đầu tiên (sample size 13) khác
-// nhau thật sự trong file mẫu (đã đối chiếu từng ô, không phải lỗi gõ).
-const AQL_SAMPLING_TABLE = [
-  { range: '51-90', sampling: 13, aql25: [0, 1, 0, 1], aql15: [1, 2, 1, 2] },
-  { range: '91-150', sampling: 20, aql25: [1, 2, 1, 2], aql15: [1, 2, 1, 2] },
-  { range: '151-280', sampling: 32, aql25: [2, 3, 2, 3], aql15: [2, 3, 2, 3] },
-  { range: '281-500', sampling: 50, aql25: [3, 4, 3, 4], aql15: [3, 4, 3, 4] },
-  { range: '501-1200', sampling: 80, aql25: [5, 6, 5, 6], aql15: [5, 6, 5, 6] },
-  { range: '1,201-3,200', sampling: 125, aql25: [7, 8, 7, 8], aql15: [7, 8, 7, 8] },
-  { range: '3,201-10,000', sampling: 200, aql25: [10, 11, 10, 11], aql15: [10, 11, 10, 11] },
-  { range: '10,001-35,000', sampling: 315, aql25: [14, 15, 14, 15], aql15: [14, 15, 14, 15] },
-  { range: '35,001-500,000', sampling: 500, aql25: [21, 22, 21, 22], aql15: [21, 22, 21, 22] },
-]
-// [Major Ac, Major Re, Minor Ac, Minor Re]
-
 // Màu tô B105/B106/B107 (Pass/Rejected/Pending) - đúng ARGB dùng trong
 // excelExport.js (AQL_RESULT_FILL_ARGB), quy đổi sang RGB thập phân cho jsPDF.
 const RESULT_COLOR = {
@@ -160,10 +150,9 @@ const RESULT_LABEL_ROWS = [
 ]
 
 function lookupAqlAllowance(samplingSize, aqlLevel) {
-  const row = AQL_SAMPLING_TABLE.find((r) => r.sampling === Number(samplingSize))
-  if (!row) return null
-  const [majorAc, , minorAc] = aqlLevel === '1.5' ? row.aql15 : row.aql25
-  return { majorAc, minorAc }
+  const thresholds = lookupAqlThresholds(samplingSize, aqlLevel)
+  if (!thresholds) return null
+  return { majorAc: thresholds.majorAc, minorAc: thresholds.minorAc }
 }
 
 // ---------------------------------------------------------------------------
@@ -477,7 +466,7 @@ function drawAqlSamplingTable(doc, startY, ticket) {
   return doc.lastAutoTable.finalY + 5
 }
 
-function drawResultSection(doc, startY, ticket) {
+function drawResultSection(doc, startY, ticket, qcChecklistValues) {
   let y = ensureSpace(doc, startY, 20)
   doc.setFont(FONT_FAMILY, 'bold')
   doc.setFontSize(10.5)
@@ -487,9 +476,18 @@ function drawResultSection(doc, startY, ticket) {
 
   const allowance = lookupAqlAllowance(ticket.samplingSize, ticket.aqlLevel)
 
+  // Pending là lớp phủ lên Pass (vẫn trong AQL), không phải trạng thái loại
+  // trừ Pass như Reject - xem writeAqlResultCell() trong excelExport.js (cùng
+  // logic, giữ đồng bộ 2 nơi). resolveAqlResult() tự tính PASS/REJECTED khi
+  // ticket.inspectionResult chưa được BE tính (field hay bị null).
+  const result = resolveAqlResult(ticket)
+  const withinAql = result === 'PASS' || result === 'PENDING'
+  const isPending = withinAql && (qcChecklistValues?.[AQL_PENDING_FLAG_KEY] === true || result === 'PENDING')
+  const shouldFill = { PASS: withinAql, REJECTED: result === 'REJECTED', PENDING: isPending }
+
   const body = RESULT_LABEL_ROWS.map(({ key, label }) => [
     { content: label, styles: { fontStyle: 'bold' } },
-    { content: '', styles: { fillColor: ticket.inspectionResult === key ? RESULT_COLOR[key] : [255, 255, 255] } },
+    { content: '', styles: { fillColor: shouldFill[key] ? RESULT_COLOR[key] : [255, 255, 255] } },
   ])
   body[0].push('Major - No# of defect allowed', allowance ? String(allowance.majorAc) : '—')
   body[1].push('Minor - No# of defect allowed', allowance ? String(allowance.minorAc) : '—')
@@ -516,7 +514,20 @@ function drawResultSection(doc, startY, ticket) {
     },
   })
 
-  return doc.lastAutoTable.finalY + 5
+  y = doc.lastAutoTable.finalY + 5
+
+  const reason = isPending ? (qcChecklistValues?.[AQL_PENDING_REASON_KEY] || '').trim() : ''
+  if (reason) {
+    const lines = doc.splitTextToSize(`Lý do Pending - Treo: ${reason}`, CONTENT_WIDTH)
+    y = ensureSpace(doc, y, lines.length * 4 + 3)
+    doc.setFont(FONT_FAMILY, 'normal')
+    doc.setFontSize(8.5)
+    doc.setTextColor(20)
+    doc.text(lines, PAGE_MARGIN, y)
+    y += lines.length * 4 + 3
+  }
+
+  return y
 }
 
 function drawPackingShipmentSection(doc, startY, qcChecklistValues) {
@@ -561,7 +572,7 @@ function drawMainReportPages(doc, ticket, qcChecklistValues) {
   y = drawMaterialsSection(doc, y, qcChecklistValues)
   y = drawInspectionPointsSection(doc, y, ticket)
   y = drawAqlSamplingTable(doc, y, ticket)
-  y = drawResultSection(doc, y, ticket)
+  y = drawResultSection(doc, y, ticket, qcChecklistValues)
   drawPackingShipmentSection(doc, y, qcChecklistValues)
 }
 

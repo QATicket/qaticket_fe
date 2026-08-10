@@ -232,6 +232,14 @@ export const en = {
     'All items default to "v" (pass). Tick "x" for items that fail.',
   'Đạt': 'Pass',
   'Không đạt': 'Fail',
+  'Pending - Treo (vẫn trong AQL nhưng có yếu tố khách quan)':
+    'Pending - Treo (still within AQL but held for an external reason)',
+  'Phiếu này có bị Pending không?': 'Is this ticket Pending?',
+  'Có': 'Yes',
+  'Không': 'No',
+  'Lý do Pending': 'Pending reason',
+  'Nhập lý do pending...': 'Enter the pending reason...',
+  'Vui lòng nhập lý do Pending': 'Please enter the Pending reason',
   'Xác nhận & Xuất {{label}}': 'Confirm & Export {{label}}',
 
   // -- TicketRowActions --

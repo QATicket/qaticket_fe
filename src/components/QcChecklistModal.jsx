@@ -4,19 +4,36 @@ import {
   QC_CHOICE_GROUPS,
   defaultQcChecklistValues,
   defaultQcChoiceValues,
+  AQL_PENDING_FLAG_KEY,
+  AQL_PENDING_REASON_KEY,
 } from '../utils/qcChecklist'
+import { resolveAqlResult } from '../utils/aqlResult'
 import { useLanguage } from '../i18n/LanguageContext'
 
-export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'Excel' }) {
+const AQL_STAGES = ['FINAL', 'PREFINAL']
+
+export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'Excel', ticket }) {
   const { t } = useLanguage()
   const [values, setValues] = useState(() => ({
     ...defaultQcChecklistValues(),
     ...defaultQcChoiceValues(),
   }))
+  const [aqlPending, setAqlPending] = useState(false)
+  const [aqlPendingReason, setAqlPendingReason] = useState('')
 
   function setItemValue(itemId, value) {
     setValues((prev) => ({ ...prev, [itemId]: value }))
   }
+
+  // Pending chỉ có ý nghĩa khi phiếu đang Pass (vẫn trong AQL) - Reject là vượt
+  // AQL nên không thể vừa Reject vừa Pending. Cờ này KHÔNG lưu vào ticket/BE,
+  // chỉ tồn tại trong phiên xuất báo cáo hiện tại (xem AQL_PENDING_FLAG_KEY).
+  // resolveAqlResult() tự tính PASS/REJECTED khi ticket.inspectionResult chưa
+  // được BE tính (field hay bị null) - xem utils/aqlResult.js.
+  const aqlResult = ticket ? resolveAqlResult(ticket) : null
+  const showPendingOption =
+    ticket && AQL_STAGES.includes(ticket.inspectionStage) && (aqlResult === 'PASS' || aqlResult === 'PENDING')
+  const pendingReasonMissing = aqlPending && !aqlPendingReason.trim()
 
   // Chèn mục 6 (chọn 1-trong-2) ngay sau "Packing" để nằm cùng hàng, bên
   // phải mục 5 trong lưới 2 cột (packing là item cuối của QC_CHECKLIST_GROUPS).
@@ -78,6 +95,68 @@ export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'E
                       </div>
                     ))}
                   </div>
+
+                  {group.id === 'packing-shipment' && showPendingOption && (
+                    <div className="mt-3 pt-3 border-t border-amber-200">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm text-slate-600">
+                          {t('Pending - Treo (vẫn trong AQL nhưng có yếu tố khách quan)')}
+                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setAqlPending(true)}
+                            title={t('Có')}
+                            aria-label={t('Có')}
+                            aria-pressed={aqlPending}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors ${
+                              aqlPending
+                                ? 'bg-amber-500 border-amber-500 text-white'
+                                : 'bg-white border-slate-300 text-slate-300 hover:border-amber-500 hover:text-amber-500'
+                            }`}
+                          >
+                            <CheckIcon />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAqlPending(false)}
+                            title={t('Không')}
+                            aria-label={t('Không')}
+                            aria-pressed={!aqlPending}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors ${
+                              !aqlPending
+                                ? 'bg-slate-500 border-slate-500 text-white'
+                                : 'bg-white border-slate-300 text-slate-300 hover:border-slate-500 hover:text-slate-500'
+                            }`}
+                          >
+                            <XIcon />
+                          </button>
+                        </div>
+                      </div>
+
+                      {aqlPending && (
+                        <div className="mt-2">
+                          <label className="block text-xs text-slate-500 mb-1">
+                            {t('Lý do Pending')}
+                          </label>
+                          <textarea
+                            value={aqlPendingReason}
+                            onChange={(e) => setAqlPendingReason(e.target.value)}
+                            rows={2}
+                            className={`w-full border rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy ${
+                              pendingReasonMissing ? 'border-brand-red' : 'border-slate-300'
+                            }`}
+                            placeholder={t('Nhập lý do pending...')}
+                          />
+                          {pendingReasonMissing && (
+                            <p className="text-xs text-brand-red mt-1">
+                              {t('Vui lòng nhập lý do Pending')}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div key={group.id} className="border border-slate-200 rounded-md p-3">
@@ -135,8 +214,15 @@ export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'E
           </button>
           <button
             type="button"
-            onClick={() => onConfirm(values)}
-            className="bg-brand-navy text-white text-sm font-medium rounded-md px-4 py-2 hover:opacity-90"
+            disabled={pendingReasonMissing}
+            onClick={() =>
+              onConfirm({
+                ...values,
+                [AQL_PENDING_FLAG_KEY]: aqlPending,
+                [AQL_PENDING_REASON_KEY]: aqlPending ? aqlPendingReason.trim() : '',
+              })
+            }
+            className="bg-brand-navy text-white text-sm font-medium rounded-md px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t('Xác nhận & Xuất {{label}}', { label: exportLabel })}
           </button>

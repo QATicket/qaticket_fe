@@ -1,6 +1,12 @@
 import ExcelJS from 'exceljs'
 import { getQaTicket } from '../api/qaTickets'
-import { QC_CHECKLIST_GROUPS, QC_CHOICE_GROUPS } from './qcChecklist'
+import {
+  QC_CHECKLIST_GROUPS,
+  QC_CHOICE_GROUPS,
+  AQL_PENDING_FLAG_KEY,
+  AQL_PENDING_REASON_KEY,
+} from './qcChecklist'
+import { resolveAqlResult } from './aqlResult'
 
 // Xem src/CLAUDE.md (mục "CẬP NHẬT (v2)") - đây là bản JS port 1:1 của
 // fill_qa_report.py, chạy trong trình duyệt thay vì Python/openpyxl.
@@ -38,6 +44,21 @@ const AQL_LEVEL_LABEL_CELL = 'K3'
 const AQL_RESULT_CELLS = { PASS: 'B105', REJECTED: 'B106', PENDING: 'B107' }
 // Màu style "Good/Bad/Neutral" chuẩn của Excel.
 const AQL_RESULT_FILL_ARGB = { PASS: 'FFC6EFCE', REJECTED: 'FFFFC7CE', PENDING: 'FFFFEB9C' }
+
+// Pending vẫn nằm trong AQL (không phải Reject) nên khi Pending phải tô XANH
+// cả Pass lẫn VÀNG ô Pending cùng lúc - xem writeAqlResultCell(). Lý do Pending
+// (nhập ở QcChecklistModal lúc xuất, không lưu ticket/BE) ghi vào A115 - dòng
+// trống duy nhất gần bảng AQL Result, không đụng merge/formula nào (đã dò
+// trực tiếp file mẫu .xlsx). Dòng 115 trong file mẫu là dòng "đệm" cao 0.75pt
+// (gần như ẩn, dùng để giãn cách các dòng checkbox Packing/Shipment phía
+// trên) - phải tự tăng chiều cao khi ghi lý do vào, nếu không dòng vẫn bị
+// thu nhỏ và chữ bị cắt dù đã có value.
+const PENDING_REASON_CELL = 'A115'
+const PENDING_REASON_ROW = 115
+// Chỉ đủ cao cho 1 dòng chữ (font size 12 của ô A115) - không wrapText, để
+// chữ tràn ngang qua các ô trống bên phải (giống cách Excel hiển thị text
+// tràn khi ô kế bên không có nội dung), tránh xuống dòng làm dòng quá cao.
+const PENDING_REASON_ROW_HEIGHT = 16
 
 // B3 (dòng "Loại kiểm tra") - ghi thẳng giá trị inspectionStage của ticket.
 const MAIN_REPORT_INSPECTION_STAGE_CELL = 'B3'
@@ -232,19 +253,40 @@ function writeAqlLevelCell(ws, ticket) {
   ws.getCell(AQL_LEVEL_LABEL_CELL).value = level === '1.5' || level === '2.5' ? `AQL ${level}` : null
 }
 
-function writeAqlResultCell(ws, ticket) {
-  const result = ticket?.inspectionResult
+function writeAqlResultCell(ws, ticket, qcChecklistValues) {
+  // resolveAqlResult() tự tính PASS/REJECTED khi ticket.inspectionResult chưa
+  // được BE tính (field hay bị null) - xem aqlResult.js.
+  const result = resolveAqlResult(ticket)
+  // Pending là lớp phủ lên Pass (vẫn trong AQL), không phải 1 trạng thái loại
+  // trừ Pass như Reject - nên khi pending, tô CẢ Pass (xanh) lẫn Pending
+  // (vàng) cùng lúc. Cờ pending đến từ QcChecklistModal lúc xuất (không lưu
+  // ticket/BE) hoặc từ BE nếu ticket.inspectionResult đã sẵn là PENDING.
+  const withinAql = result === 'PASS' || result === 'PENDING'
+  const isPending = withinAql && (qcChecklistValues?.[AQL_PENDING_FLAG_KEY] === true || result === 'PENDING')
+  const shouldFill = { PASS: withinAql, REJECTED: result === 'REJECTED', PENDING: isPending }
+
   for (const [key, address] of Object.entries(AQL_RESULT_CELLS)) {
     const cell = ws.getCell(address)
-    const fill =
-      key === result
-        ? { type: 'pattern', pattern: 'solid', fgColor: { argb: AQL_RESULT_FILL_ARGB[key] } }
-        : { type: 'pattern', pattern: 'solid', fgColor: { theme: 0 }, bgColor: { theme: 0 } }
+    const fill = shouldFill[key]
+      ? { type: 'pattern', pattern: 'solid', fgColor: { argb: AQL_RESULT_FILL_ARGB[key] } }
+      : { type: 'pattern', pattern: 'solid', fgColor: { theme: 0 }, bgColor: { theme: 0 } }
     // B105/B106/B107 dùng chung 1 style object trong file mẫu gốc (ExcelJS
     // intern style giống nhau) - gán thẳng cell.fill = ... sẽ mutate object
     // dùng chung đó, khiến 2 ô còn lại bị đổi màu theo. Phải gán qua
     // cell.style = {...} để tách style riêng cho từng ô.
     cell.style = { ...cell.style, fill }
+  }
+
+  const reason = isPending ? (qcChecklistValues?.[AQL_PENDING_REASON_KEY] || '').trim() : ''
+  const reasonCell = ws.getCell(PENDING_REASON_CELL)
+  if (reason) {
+    reasonCell.value = `Lý do Pending - Treo: ${reason}`
+    reasonCell.alignment = { ...reasonCell.alignment, wrapText: false, vertical: 'middle' }
+    // Dòng 115 mặc định cao 0.75pt (dòng đệm ẩn) - phải tự tăng chiều cao,
+    // nếu không dòng vẫn bị thu nhỏ và chữ vừa ghi bị cắt mất dù đã có value.
+    ws.getRow(PENDING_REASON_ROW).height = PENDING_REASON_ROW_HEIGHT
+  } else {
+    reasonCell.value = null
   }
 }
 
@@ -675,7 +717,7 @@ export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistVal
   writeInspectionStageCell(ws, MAIN_REPORT_INSPECTION_STAGE_CELL, tickets[0])
   writeTitleCell(ws)
   writeAqlLevelCell(ws, tickets[0])
-  writeAqlResultCell(ws, tickets[0])
+  writeAqlResultCell(ws, tickets[0], qcChecklistValues)
   writeQcChecklist(ws, qcChecklistValues)
   writeQcChoiceValues(ws, qcChecklistValues)
 

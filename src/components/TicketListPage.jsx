@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { listQaTickets, deleteQaTicket, exportQaTicket, unexportQaTicket } from '../api/qaTickets'
+import {
+  listQaTickets,
+  deleteQaTicket,
+  exportQaTicket,
+  unexportQaTicket,
+  getQaTicket,
+} from '../api/qaTickets'
 import { getFactories, getAllStaff } from '../api/master'
 import { exportTicketPdf } from '../utils/pdfExport'
 import { exportTicketsExcel } from '../utils/excelExport'
@@ -143,36 +149,42 @@ export default function TicketListPage({ userInfo, onEdit }) {
   // PDF cũng cần v/x Materials thật (không phải luôn mặc định "v") nên đi qua
   // QcChecklistModal giống flow Excel - qcChecklistMode phân biệt export nào
   // sẽ chạy khi người dùng xác nhận (xem handleConfirmQcChecklist).
-  function handleExportPdf(ticket) {
+  //
+  // `row` trong bảng danh sách là DTO rút gọn (staffName/factoryName/lineName
+  // dạng chuỗi phẳng) - KHÔNG có actualMajorDefects/actualMinorDefects/
+  // aqlLevel, nên QcChecklistModal không tự tính được AQL result khi BE chưa
+  // tính sẵn ticket.inspectionResult (xem utils/aqlResult.js). Phải gọi lại
+  // getQaTicket(id) lấy chi tiết đầy đủ trước khi mở modal.
+  async function openQcChecklistModal(ticket, mode) {
     if (ticket.exported && !isAdmin) {
       setError(t('Phiếu này đã được xuất, không thể xuất lại'))
       return
     }
     setError('')
-    setQcChecklistMode('pdf')
-    setQcChecklistTicket(ticket)
+    setBusyId(ticket.id)
+    try {
+      const fullTicket = await getQaTicket(ticket.id)
+      setQcChecklistMode(mode)
+      setQcChecklistTicket(fullTicket)
+    } catch (err) {
+      setError(err.message || t('Không tải được chi tiết phiếu'))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  function handleExportPdf(ticket) {
+    openQcChecklistModal(ticket, 'pdf')
   }
 
   function handleExportExcel(ticket) {
-    if (ticket.exported && !isAdmin) {
-      setError(t('Phiếu này đã được xuất, không thể xuất lại'))
-      return
-    }
-    setError('')
-    setQcChecklistMode('excel')
-    setQcChecklistTicket(ticket)
+    openQcChecklistModal(ticket, 'excel')
   }
 
   // Tính năng riêng "Xuất PDF giống Excel" (xem pdfExportExcelStyle.js) - đi
   // qua cùng QcChecklistModal để lấy v/x Materials thật, giống flow pdf/excel.
   function handleExportPdfExcelStyle(ticket) {
-    if (ticket.exported && !isAdmin) {
-      setError(t('Phiếu này đã được xuất, không thể xuất lại'))
-      return
-    }
-    setError('')
-    setQcChecklistMode('pdf-excel-style')
-    setQcChecklistTicket(ticket)
+    openQcChecklistModal(ticket, 'pdf-excel-style')
   }
 
   async function handleConfirmQcChecklist(qcChecklistValues) {
@@ -489,6 +501,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
       {qcChecklistTicket && (
         <QcChecklistModal
           exportLabel={qcChecklistMode === 'excel' ? 'Excel' : 'PDF'}
+          ticket={qcChecklistTicket}
           onConfirm={handleConfirmQcChecklist}
           onCancel={() => setQcChecklistTicket(null)}
         />

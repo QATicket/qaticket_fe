@@ -134,3 +134,10 @@ export function defaultQcChoiceValues() {
   }
   return values
 }
+
+// Cờ "Pending - Treo" cho bảng AQL Result (dòng 105-107) - KHÔNG nằm trong
+// ticket.inspectionResult (BE chỉ trả PASS/REJECTED), QC tự tick ngay lúc xuất
+// báo cáo giống flow v/x MATERIALS ở trên, không lưu vào ticket/BE. Chỉ có ý
+// nghĩa khi ticket đang PASS (vẫn trong AQL) - xem QcChecklistModal.jsx.
+export const AQL_PENDING_FLAG_KEY = 'aqlPending'
+export const AQL_PENDING_REASON_KEY = 'aqlPendingReason'
