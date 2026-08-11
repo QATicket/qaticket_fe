@@ -175,12 +175,17 @@ function drawTitle(doc, ticket) {
 function drawHeaderInfoTable(doc, ticket, startY) {
   const stageLabel = STAGE_LABEL[ticket.inspectionStage] || ticket.inspectionStage || '—'
   const aqlLabel = ticket.aqlLevel === '1.5' || ticket.aqlLevel === '2.5' ? `AQL ${ticket.aqlLevel}` : '—'
+  // qtySize/samplingSize chỉ được BE lưu cho FINAL/PREFINAL (xem toPayload() trong
+  // mapper.js - field AQL không gửi lên ở stage khác) - các stage còn lại luôn null
+  // nên "Sample size" bị trống. Fallback về inspectedQty (SL kiểm tra thực tế, field
+  // bắt buộc cho MỌI stage - xem validate.js) để ô này luôn có giá trị.
+  const sampleSize = ticket.samplingSize ?? ticket.inspectedQty ?? '—'
 
   const rows = [
     ['Inspection Stage - Loại kiểm tra', stageLabel, 'AQL Level', aqlLabel],
     ['Customer (KH)', ticket.customerName || '—', 'PO', ticket.poNumber || '—'],
     ['Style (mã hàng)', ticket.style || '—', 'Date (Ngày)', formatDateOnly(ticket.createdAt)],
-    ['Order Qty (SL)', ticket.qtySize ?? '—', 'Sample size (SL mẫu)', ticket.samplingSize ?? '—'],
+    ['Order Qty (SL)', ticket.qtySize ?? '—', 'Sample size (SL mẫu)', sampleSize],
     ['Shipment date\nNgày xuất', '—', 'MDA#', '—'],
     ['Inspector\nNgười kiểm tra', ticket.staff?.name || '—', '', ''],
     ['Supplier', 'NHA BE', 'Location', 'VIET NAM'],

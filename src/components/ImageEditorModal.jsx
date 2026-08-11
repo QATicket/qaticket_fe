@@ -211,10 +211,25 @@ export default function ImageEditorModal({ file, onCancel, onConfirm }) {
     setCropRect({ x: 0, y: 0, w, h })
   }
 
+  // Người dùng muốn ảnh chụp (đã crop/vẽ) tự lưu về máy luôn khi bấm "Dùng ảnh
+  // này", không chỉ upload lên server - tạo link tải tạm rồi click giả lập.
+  function downloadBlob(blob) {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `capture-${Date.now()}.jpg`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
   function handleConfirm() {
     canvasRef.current.toBlob(
       (blob) => {
-        if (blob) onConfirm(blob)
+        if (!blob) return
+        downloadBlob(blob)
+        onConfirm(blob)
       },
       'image/jpeg',
       0.9,
