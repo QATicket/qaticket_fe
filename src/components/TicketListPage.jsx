@@ -14,7 +14,6 @@ import TicketRowActions from './TicketRowActions'
 import TicketDetailModal from './TicketDetailModal'
 import ExportProgressModal from './ExportProgressModal'
 import QcChecklistModal from './QcChecklistModal'
-import InspectionResultBadge from './InspectionResultBadge'
 import { useLanguage } from '../i18n/LanguageContext'
 
 const STATUS_LABEL = { DRAFT: 'Nháp', SUBMITTED: 'Đã nộp' }
@@ -224,7 +223,7 @@ export default function TicketListPage({ userInfo, onEdit }) {
 
     setExcelProgress(t('Đang chuẩn bị...'))
     try {
-      const { overflow, imageOverflow } = await exportTicketsExcel(ticket.id, {
+      const { overflow } = await exportTicketsExcel(ticket.id, {
         onProgress: setExcelProgress,
         qcChecklistValues,
       })
@@ -234,20 +233,6 @@ export default function TicketListPage({ userInfo, onEdit }) {
         messages.push(
           t('{{count}} loại lỗi bị bỏ qua do vượt quá số dòng cho phép trong bảng lỗi', {
             count: overflow.length,
-          }),
-        )
-      }
-      if (imageOverflow?.major.length > 0) {
-        messages.push(
-          t('{{count}} ảnh Major bị bỏ qua do vượt quá 16 khung ảnh', {
-            count: imageOverflow.major.length,
-          }),
-        )
-      }
-      if (imageOverflow?.minor.length > 0) {
-        messages.push(
-          t('{{count}} ảnh Minor bị bỏ qua do vượt quá 16 khung ảnh', {
-            count: imageOverflow.minor.length,
           }),
         )
       }
@@ -402,7 +387,6 @@ export default function TicketListPage({ userInfo, onEdit }) {
                 <th className="px-4 py-3">{t('Khâu KT')}</th>
                 <th className="px-4 py-3">{t('SL')}</th>
                 <th className="px-4 py-3">{t('Trạng thái')}</th>
-                <th className="px-4 py-3">{t('KQ AQL')}</th>
                 <th className="px-4 py-3">{t('Xuất')}</th>
                 <th className="px-4 py-3">{t('Ngày tạo')}</th>
                 <th className="px-4 py-3">{t('Hành động')}</th>
@@ -428,14 +412,6 @@ export default function TicketListPage({ userInfo, onEdit }) {
                     >
                       {t(STATUS_LABEL[row.status] || row.status)}
                     </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    <div className="flex flex-col gap-0.5">
-                      <InspectionResultBadge value={row.inspectionResult} />
-                      {row.samplingSize != null && (
-                        <span className="text-[11px] text-slate-400">n={row.samplingSize}</span>
-                      )}
-                    </div>
                   </td>
                   <td className="px-4 py-2">
                     <span

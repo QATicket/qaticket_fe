@@ -30,6 +30,7 @@ export function emptySpecImages() {
     SIZE_SPEC: [],
     PACKING: [],
     HANGTAG_LABEL: [],
+    PACKING_LIST: [],
     // ảnh cũ (trước khi có field type) chỉ để hiển thị, không gán lại type khi lưu
     OTHER: [],
   }

@@ -6,17 +6,25 @@ import { useLanguage } from '../i18n/LanguageContext'
 
 const STATUS_LABEL = { DRAFT: 'Nháp', SUBMITTED: 'Đã nộp' }
 
-const SPEC_IMAGE_TYPES = ['PACKING', 'HANGTAG_LABEL', 'APPROVED_SAMPLE', 'SIZE_SPEC']
+const SPEC_IMAGE_TYPES = ['PACKING', 'HANGTAG_LABEL', 'APPROVED_SAMPLE', 'PACKING_LIST', 'SIZE_SPEC']
 const SPEC_IMAGE_LABELS = {
   PACKING: 'Quy cách đóng thùng/Bao bì',
   HANGTAG_LABEL: 'Thẻ treo & Nhãn hiệu',
   APPROVED_SAMPLE: 'Mẫu duyệt',
+  PACKING_LIST: 'Packing List',
   SIZE_SPEC: 'Bảng thông số kích thước',
   OTHER: 'Khác',
 }
 
 function groupSpecImagesByType(specImages) {
-  const buckets = { PACKING: [], HANGTAG_LABEL: [], APPROVED_SAMPLE: [], SIZE_SPEC: [], OTHER: [] }
+  const buckets = {
+    PACKING: [],
+    HANGTAG_LABEL: [],
+    APPROVED_SAMPLE: [],
+    PACKING_LIST: [],
+    SIZE_SPEC: [],
+    OTHER: [],
+  }
   ;(specImages || []).forEach((img) => {
     const bucket = SPEC_IMAGE_TYPES.includes(img.type) ? img.type : 'OTHER'
     buckets[bucket].push(img)

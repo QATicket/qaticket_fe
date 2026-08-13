@@ -38,26 +38,34 @@ const AQL_LEVEL_CELL = 'M3'
 // K3 (merge K3:L3) - nhãn hiển thị "AQL 1.5"/"AQL 2.5" cạnh checkbox M3.
 const AQL_LEVEL_LABEL_CELL = 'K3'
 
-// B105/B106/B107 - ô trống cạnh nhãn "Pass - Đạt/Rejected - K.đạt/Pending -
-// Treo" (cột A cùng dòng), tô màu theo ticket.inspectionResult (PASS/
-// REJECTED/PENDING - xem InspectionResultBadge.jsx).
-const AQL_RESULT_CELLS = { PASS: 'B105', REJECTED: 'B106', PENDING: 'B107' }
+// File mẫu có 2 khung "Inspection Result" ĐỘC LẬP nằm cạnh nhau, không phải 1
+// khung + 1 bản in lặp lại: khung trái (B105/B106/B107, cạnh nhãn "Pass - Đạt/
+// Rejected - K.đạt/Pending - Treo" cột A) ứng với AQL 2.5, khung phải
+// (K105/K106/K107, cạnh nhãn tương tự ở cột J) ứng với AQL 1.5 - xác nhận qua
+// conditional formatting gốc trong file mẫu: K105:K106/K107 có rule y hệt
+// B105:B106/B107 (cùng công thức, khác vị trí neo). Chỉ tô đúng 1 khung theo
+// ticket.aqlLevel, khung còn lại để trắng.
+const AQL_RESULT_CELLS_BY_LEVEL = {
+  '2.5': { PASS: 'B105', REJECTED: 'B106', PENDING: 'B107' },
+  '1.5': { PASS: 'K105', REJECTED: 'K106', PENDING: 'K107' },
+}
 // Màu style "Good/Bad/Neutral" chuẩn của Excel.
 const AQL_RESULT_FILL_ARGB = { PASS: 'FFC6EFCE', REJECTED: 'FFFFC7CE', PENDING: 'FFFFEB9C' }
 
 // Pending vẫn nằm trong AQL (không phải Reject) nên khi Pending phải tô XANH
 // cả Pass lẫn VÀNG ô Pending cùng lúc - xem writeAqlResultCell(). Lý do Pending
-// (nhập ở QcChecklistModal lúc xuất, không lưu ticket/BE) ghi vào A115 - dòng
-// trống duy nhất gần bảng AQL Result, không đụng merge/formula nào (đã dò
-// trực tiếp file mẫu .xlsx). Dòng 115 trong file mẫu là dòng "đệm" cao 0.75pt
-// (gần như ẩn, dùng để giãn cách các dòng checkbox Packing/Shipment phía
-// trên) - phải tự tăng chiều cao khi ghi lý do vào, nếu không dòng vẫn bị
-// thu nhỏ và chữ bị cắt dù đã có value.
-const PENDING_REASON_CELL = 'A115'
+// (nhập ở QcChecklistModal lúc xuất, không lưu ticket/BE) ghi cạnh khung đúng
+// AQL Level: A115 cạnh khung trái (2.5), J115 cạnh khung phải (1.5) - dòng 115
+// trong file mẫu hoàn toàn trống từ A đến P (đã dò trực tiếp), không đụng
+// merge/formula nào. Dòng 115 là dòng "đệm" cao 0.75pt (gần như ẩn, dùng để
+// giãn cách các dòng checkbox Packing/Shipment phía trên) - phải tự tăng
+// chiều cao khi ghi lý do vào, nếu không dòng vẫn bị thu nhỏ và chữ bị cắt dù
+// đã có value.
+const PENDING_REASON_CELL_BY_LEVEL = { '2.5': 'A115', '1.5': 'J115' }
 const PENDING_REASON_ROW = 115
-// Chỉ đủ cao cho 1 dòng chữ (font size 12 của ô A115) - không wrapText, để
-// chữ tràn ngang qua các ô trống bên phải (giống cách Excel hiển thị text
-// tràn khi ô kế bên không có nội dung), tránh xuống dòng làm dòng quá cao.
+// Chỉ đủ cao cho 1 dòng chữ (font size 12) - không wrapText, để chữ tràn ngang
+// qua các ô trống bên phải (giống cách Excel hiển thị text tràn khi ô kế bên
+// không có nội dung), tránh xuống dòng làm dòng quá cao.
 const PENDING_REASON_ROW_HEIGHT = 16
 
 // B3 (dòng "Loại kiểm tra") - ghi thẳng giá trị inspectionStage của ticket.
@@ -108,11 +116,12 @@ const SPEC_IMAGE_TYPE_LABELS = {
   SIZE_SPEC: 'Bảng thông số kích thước',
   PACKING: 'Quy cách đóng thùng/Bao bì',
   HANGTAG_LABEL: 'Thẻ treo & Nhãn hiệu',
+  PACKING_LIST: 'Packing List',
 }
 // Thứ tự sheet "picture accept" phải khớp thứ tự upload trong form (GeneralInfoCard.jsx):
-// thùng hộp -> thẻ treo/nhãn -> mẫu duyệt. Không trông cậy vào thứ tự BE trả về
-// vì ticket cũ có thể đã lưu specImages theo thứ tự khác.
-const SPEC_IMAGE_ORDER = ['PACKING', 'HANGTAG_LABEL', 'APPROVED_SAMPLE', 'SIZE_SPEC']
+// thùng hộp -> thẻ treo/nhãn -> mẫu duyệt -> packing list. Không trông cậy vào
+// thứ tự BE trả về vì ticket cũ có thể đã lưu specImages theo thứ tự khác.
+const SPEC_IMAGE_ORDER = ['PACKING', 'HANGTAG_LABEL', 'APPROVED_SAMPLE', 'PACKING_LIST', 'SIZE_SPEC']
 function specImageRank(type) {
   const i = SPEC_IMAGE_ORDER.indexOf(type)
   return i === -1 ? SPEC_IMAGE_ORDER.length : i
@@ -183,17 +192,82 @@ function writeQcChecklist(ws, qcChecklistValues) {
   }
 }
 
+// Packing Method & Shipment KHÔNG có sẵn khung riêng theo AQL Level trong file
+// mẫu (khác khung Inspection Result) - đã dò toàn bộ workbook để xác nhận chỉ
+// có đúng 1 vị trí duy nhất (B109/B111/B113/B114). Theo yêu cầu, tự tạo thêm 1
+// khung "mirror" ở cột J/K/M (offset +9 cột so với A/B/D - ĐÚNG offset file
+// mẫu đã dùng sẵn cho khung Inspection Result: A105↔J105, B(fill)↔K) để hiển
+// thị riêng cho AQL 1.5, giữ khung gốc A/B/D cho AQL 2.5. Đã kiểm tra: vùng
+// J109:M114 hoàn toàn trống, không merge/formula, font đã khớp sẵn (Times New
+// Roman 12) nên ghi an toàn, không phải copy style thủ công.
+const CHOICE_OPTION_CHECKBOX_CELLS_BY_LEVEL = {
+  '2.5': {
+    'flat-packed-choice': ['A109', 'A110'],
+    'hanging-goods-choice': ['A111', 'A112'],
+    sea: ['A113'],
+    air: ['A114'],
+  },
+  '1.5': {
+    'flat-packed-choice': ['J109', 'J110'],
+    'hanging-goods-choice': ['J111', 'J112'],
+    sea: ['J113'],
+    air: ['J114'],
+  },
+}
+// Nhãn chữ thật của từng lựa chọn (Sea/Air chỉ có 1 ô nhãn, Flat Packed/
+// Hanging Goods có 2 ô) - text giữ đúng khoảng trắng như trong file mẫu gốc để
+// khung mirror (1.5) hiển thị giống hệt khung gốc (2.5).
+const CHOICE_OPTION_LABEL = {
+  'flat-packed-choice': {
+    cells: { '2.5': ['B109', 'D109'], '1.5': ['K109', 'M109'] },
+    text: ['Flat Packed  ', 'Đóng thùng'],
+  },
+  'hanging-goods-choice': {
+    cells: { '2.5': ['B111', 'D111'], '1.5': ['K111', 'M111'] },
+    text: ['Hanging Goods', 'Treo'],
+  },
+  sea: { cells: { '2.5': ['B113'], '1.5': ['K113'] }, text: ['SEA '] },
+  air: { cells: { '2.5': ['B114'], '1.5': ['K114'] }, text: ['AIR '] },
+}
+
 // Ghi lựa chọn 1-trong-2 (Hanging Goods/Flat Packed, Air/Sea - xem
-// QC_CHOICE_GROUPS trong qcChecklist.js) vào các ô A109/A111/A113/A114: TRUE
-// cho ô của lựa chọn được chọn, FALSE cho ô còn lại (kể cả khi người dùng
-// chưa chọn gì ở mục này thì cả 2 ô đều là FALSE).
-function writeQcChoiceValues(ws, qcChecklistValues) {
+// QC_CHOICE_GROUPS trong qcChecklist.js) vào ĐÚNG khung theo AQL Level của
+// ticket (2.5 → khung gốc A/B/D, 1.5 → khung mirror J/K/M) - khung KHÔNG áp
+// dụng bị xoá sạch hoàn toàn (cả checkbox lẫn nhãn chữ). Trong khung áp dụng:
+// checkbox luôn để trống (không ghi TRUE/FALSE), nhãn chữ chỉ bị XOÁ THẬT
+// (value = null, không phải ẩn dòng) khi lựa chọn ĐỐI DIỆN đã được chọn - giữ
+// nguyên/ghi lại nhãn cả 2 lựa chọn khi người dùng chưa chọn gì ở mục đó.
+function writeQcChoiceValues(ws, ticket, qcChecklistValues) {
   if (!qcChecklistValues) return
+  const activeLevel = ticket?.aqlLevel === '1.5' ? '1.5' : '2.5'
+  const inactiveLevel = activeLevel === '1.5' ? '2.5' : '1.5'
+
   for (const group of QC_CHOICE_GROUPS) {
     for (const item of group.items) {
       const selected = qcChecklistValues[item.id]
       for (const option of item.options) {
-        ws.getCell(option.cell).value = option.id === selected
+        const isSelected = option.id === selected
+
+        ;(CHOICE_OPTION_CHECKBOX_CELLS_BY_LEVEL[activeLevel][option.id] || []).forEach((address) => {
+          ws.getCell(address).value = null
+        })
+        ;(CHOICE_OPTION_CHECKBOX_CELLS_BY_LEVEL[inactiveLevel][option.id] || []).forEach((address) => {
+          ws.getCell(address).value = null
+        })
+
+        const { cells, text } = CHOICE_OPTION_LABEL[option.id]
+        cells[inactiveLevel].forEach((address) => {
+          ws.getCell(address).value = null
+        })
+        if (selected && !isSelected) {
+          cells[activeLevel].forEach((address) => {
+            ws.getCell(address).value = null
+          })
+        } else {
+          cells[activeLevel].forEach((address, i) => {
+            ws.getCell(address).value = text[i]
+          })
+        }
       }
     }
   }
@@ -255,10 +329,16 @@ function writeHeaderValues(ws, ticket) {
 
 function writeAqlLevelCell(ws, ticket) {
   const level = ticket?.aqlLevel
-  // Không ghi TRUE/FALSE vào checkbox M3 nữa (dù có AQL hay không) - chỉ để
-  // trống hoặc ghi nhãn "AQL 1.5"/"AQL 2.5" vào K3.
-  ws.getCell(AQL_LEVEL_CELL).value = null
-  ws.getCell(AQL_LEVEL_LABEL_CELL).value = level === '1.5' || level === '2.5' ? `AQL ${level}` : null
+  const hasLevel = level === '1.5' || level === '2.5'
+  // QUAN TRỌNG: M3 KHÔNG chỉ là hiển thị - công thức có sẵn trong file mẫu ở
+  // vùng "No# of defect allowed" (F106/G106/F107/G107 dùng IF(M3=TRUE,...) và
+  // O106/P106/O107/P107 dùng IF(M3=FALSE,...)) đọc trực tiếp giá trị M3 để
+  // quyết định đổ số liệu vào cột AQL 2.5 hay cột AQL 1.5. Để M3 trống (null)
+  // tưởng chừng vô hại nhưng Excel so sánh ô trống với FALSE ra TRUE, nên công
+  // thức luôn đổ số liệu vào phía AQL 1.5 bất kể ticket thực chọn AQL 2.5 hay
+  // không (đã dò trực tiếp file mẫu để xác nhận). Phải ghi đúng true/false.
+  ws.getCell(AQL_LEVEL_CELL).value = hasLevel ? level === '2.5' : null
+  ws.getCell(AQL_LEVEL_LABEL_CELL).value = hasLevel ? `AQL ${level}` : null
 }
 
 function writeAqlResultCell(ws, ticket, qcChecklistValues) {
@@ -273,29 +353,39 @@ function writeAqlResultCell(ws, ticket, qcChecklistValues) {
   const isPending = withinAql && (qcChecklistValues?.[AQL_PENDING_FLAG_KEY] === true || result === 'PENDING')
   const shouldFill = { PASS: withinAql, REJECTED: result === 'REJECTED', PENDING: isPending }
 
-  for (const [key, address] of Object.entries(AQL_RESULT_CELLS)) {
-    const cell = ws.getCell(address)
-    const fill = shouldFill[key]
-      ? { type: 'pattern', pattern: 'solid', fgColor: { argb: AQL_RESULT_FILL_ARGB[key] } }
-      : { type: 'pattern', pattern: 'solid', fgColor: { theme: 0 }, bgColor: { theme: 0 } }
-    // B105/B106/B107 dùng chung 1 style object trong file mẫu gốc (ExcelJS
-    // intern style giống nhau) - gán thẳng cell.fill = ... sẽ mutate object
-    // dùng chung đó, khiến 2 ô còn lại bị đổi màu theo. Phải gán qua
-    // cell.style = {...} để tách style riêng cho từng ô.
-    cell.style = { ...cell.style, fill }
+  // Không rõ AQL Level (hiếm, dữ liệu cũ thiếu field) -> mặc định khung 2.5,
+  // giữ đúng hành vi cũ (luôn tô khung trái) thay vì không tô khung nào cả.
+  const activeLevel = ticket?.aqlLevel === '1.5' ? '1.5' : '2.5'
+
+  for (const level of ['2.5', '1.5']) {
+    const isActive = level === activeLevel
+    for (const [key, address] of Object.entries(AQL_RESULT_CELLS_BY_LEVEL[level])) {
+      const cell = ws.getCell(address)
+      const fill = isActive && shouldFill[key]
+        ? { type: 'pattern', pattern: 'solid', fgColor: { argb: AQL_RESULT_FILL_ARGB[key] } }
+        : { type: 'pattern', pattern: 'solid', fgColor: { theme: 0 }, bgColor: { theme: 0 } }
+      // B105/B106/B107 (và tương tự K105/K106/K107) dùng chung 1 style object
+      // trong file mẫu gốc (ExcelJS intern style giống nhau) - gán thẳng
+      // cell.fill = ... sẽ mutate object dùng chung đó, khiến 2 ô còn lại bị
+      // đổi màu theo. Phải gán qua cell.style = {...} để tách style riêng.
+      cell.style = { ...cell.style, fill }
+    }
   }
 
   const reason = isPending ? (qcChecklistValues?.[AQL_PENDING_REASON_KEY] || '').trim() : ''
-  const reasonCell = ws.getCell(PENDING_REASON_CELL)
-  if (reason) {
-    reasonCell.value = `Lý do Pending - Treo: ${reason}`
-    reasonCell.alignment = { ...reasonCell.alignment, wrapText: false, vertical: 'middle' }
-    // Dòng 115 mặc định cao 0.75pt (dòng đệm ẩn) - phải tự tăng chiều cao,
-    // nếu không dòng vẫn bị thu nhỏ và chữ vừa ghi bị cắt mất dù đã có value.
-    ws.getRow(PENDING_REASON_ROW).height = PENDING_REASON_ROW_HEIGHT
-  } else {
-    reasonCell.value = null
+  for (const level of ['2.5', '1.5']) {
+    const reasonCell = ws.getCell(PENDING_REASON_CELL_BY_LEVEL[level])
+    if (level === activeLevel && reason) {
+      reasonCell.value = `Lý do Pending - Treo: ${reason}`
+      reasonCell.alignment = { ...reasonCell.alignment, wrapText: false, vertical: 'middle' }
+    } else {
+      reasonCell.value = null
+    }
   }
+  // Dòng 115 mặc định cao 0.75pt (dòng đệm ẩn) - phải tự tăng chiều cao khi có
+  // lý do Pending ghi vào, nếu không dòng vẫn bị thu nhỏ và chữ bị cắt dù đã
+  // có value. Trả về chiều cao gốc khi không có lý do (không giữ dòng cao dư).
+  ws.getRow(PENDING_REASON_ROW).height = reason ? PENDING_REASON_ROW_HEIGHT : 0.75
 }
 
 function writeInspectionStageCell(ws, cellAddress, ticket) {
@@ -483,6 +573,68 @@ function getPictureSlots(rowStarts, labelOffset) {
   return slots
 }
 
+// Sao chép nguyên khối khung ảnh (style/border/merge/giá trị tĩnh như nhãn
+// "Defect:") từ dòng nguồn xuống dòng đích, cell-theo-cell - dùng để NHÂN BẢN
+// thêm khối khung khi ảnh vượt quá 16 khung có sẵn, thay vì cắt bớt ảnh. Copy
+// thẳng cell.style (không tự dựng lại border thủ công) nên khối mới giống hệt
+// khối nguồn về viền/màu/font. Dùng khối ĐẦU TIÊN (rows 4.. ) làm nguồn vì đã
+// dò trực tiếp file mẫu: khối này sạch, không dính chữ thừa như 1 vài khối
+// khác trong file gốc (vd khung 4 của khối 2 trong "Picture Major Defects" có
+// sẵn mấy ký tự "`" thừa từ trước).
+function cloneRowBand(ws, sourceStartRow, blockRowSpan, destStartRow, colCount = 20) {
+  // Ngay sau khối cuối cùng có sẵn trong file mẫu là 1 dòng đệm trống, merge
+  // nguyên chiều ngang (vd A40:T40 - không viền, không nội dung) - vùng đích
+  // của khối mới đè lên đúng dòng này nên phải gỡ merge cũ trước, nếu không
+  // ExcelJS báo lỗi "Cannot merge already merged cells".
+  ws.model.merges
+    .filter((ref) => {
+      const startRow = parseInt(ref.split(':')[0].match(/\d+/)[0], 10)
+      return startRow >= destStartRow && startRow < destStartRow + blockRowSpan
+    })
+    .forEach((ref) => ws.unMergeCells(ref))
+
+  for (let i = 0; i < blockRowSpan; i++) {
+    const srcRow = sourceStartRow + i
+    const destRow = destStartRow + i
+    ws.getRow(destRow).height = ws.getRow(srcRow).height
+    for (let c = 1; c <= colCount; c++) {
+      const srcCell = ws.getCell(srcRow, c)
+      const destCell = ws.getCell(destRow, c)
+      destCell.style = { ...srcCell.style }
+      destCell.value = srcCell.value
+    }
+  }
+  const rowOffset = destStartRow - sourceStartRow
+  ws.model.merges
+    .filter((ref) => {
+      const startRow = parseInt(ref.split(':')[0].match(/\d+/)[0], 10)
+      return startRow >= sourceStartRow && startRow < sourceStartRow + blockRowSpan
+    })
+    .forEach((ref) => {
+      const [start, end] = ref.split(':')
+      const shiftRow = (addr) => {
+        const m = addr.match(/^([A-Z]+)(\d+)$/)
+        return `${m[1]}${parseInt(m[2], 10) + rowOffset}`
+      }
+      ws.mergeCells(`${shiftRow(start)}:${shiftRow(end)}`)
+    })
+}
+
+// Đảm bảo đủ khung cho `neededCount` ảnh - tự nhân bản thêm khối (mỗi khối 4
+// khung) ngay bên dưới khối cuối cùng cho tới khi đủ chỗ, trả về rowStarts đầy
+// đủ (gốc + khối mới nếu có) để getPictureSlots() dùng. Không còn khái niệm
+// "vượt quá 16 khung thì bỏ qua" nữa - luôn chèn hết ảnh.
+function ensurePictureCapacity(ws, neededCount, baseRowStarts, blockRowSpan) {
+  const perBlock = PICTURE_BOX_COL_STARTS.length
+  const rowStarts = [...baseRowStarts]
+  while (rowStarts.length * perBlock < neededCount) {
+    const nextStart = rowStarts[rowStarts.length - 1] + blockRowSpan
+    cloneRowBand(ws, baseRowStarts[0], blockRowSpan, nextStart)
+    rowStarts.push(nextStart)
+  }
+  return rowStarts
+}
+
 // "no-store" bắt buộc gọi mạng lại thay vì dùng cache "opaque" trình duyệt có
 // thể đã lưu từ lần load ảnh trước qua thẻ <img> (no-cors) - xem pdfExport.js.
 async function loadImageForExcel(url) {
@@ -534,21 +686,23 @@ function anchorOffset(startIndex0, offsetPx, unitPx) {
 }
 
 // Điền ảnh + tên lỗi vào sheet "Picture Major/Minor Defects": mỗi ảnh chiếm 1
-// trong 16 khung có sẵn của template, ảnh được fit giữ tỉ lệ (không méo,
-// không crop) và canh giữa trong khung. Vượt quá 16 ảnh thì phần dư trả về
-// qua overflow.
+// khung trong lưới 4 khung/khối, ảnh được fit giữ tỉ lệ (không méo, không
+// crop) và canh giữa trong khung. Vượt quá 16 ảnh (4 khối có sẵn) thì tự nhân
+// bản thêm khối ngay bên dưới (xem ensurePictureCapacity/cloneRowBand) - luôn
+// chèn HẾT ảnh, không còn bỏ qua ảnh dư nữa.
 async function fillPictureSheet(
   workbook,
   ws,
   entries,
   onProgress,
   label,
-  rowStarts = PICTURE_BOX_ROW_STARTS,
+  baseRowStarts = PICTURE_BOX_ROW_STARTS,
   labelOffset = PICTURE_LABEL_ROW_OFFSET,
 ) {
+  const blockRowSpan = labelOffset != null ? labelOffset + 1 : PICTURE_BOX_ROW_SPAN
+  const rowStarts = ensurePictureCapacity(ws, entries.length, baseRowStarts, blockRowSpan)
   const slots = getPictureSlots(rowStarts, labelOffset)
-  const used = entries.slice(0, slots.length)
-  const overflow = entries.slice(slots.length).map((entry) => entry.name)
+  const used = entries
 
   for (let i = 0; i < used.length; i++) {
     const entry = used[i]
@@ -594,8 +748,6 @@ async function fillPictureSheet(
       ext: { width, height },
     })
   }
-
-  return { overflow }
 }
 
 function regionWidthPx(ws, startCol, endCol) {
@@ -730,7 +882,7 @@ export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistVal
   writeAqlLevelCell(ws, tickets[0])
   writeAqlResultCell(ws, tickets[0], qcChecklistValues)
   writeQcChecklist(ws, qcChecklistValues)
-  writeQcChoiceValues(ws, qcChecklistValues)
+  writeQcChoiceValues(ws, tickets[0], qcChecklistValues)
 
   const aggregated = aggregateDefects(tickets)
   const { overflow } = writeDefectRows(ws, aggregated)
@@ -738,20 +890,17 @@ export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistVal
   const wsMajor = workbook.getWorksheet(PICTURE_SHEET_MAJOR)
   const wsMinor = workbook.getWorksheet(PICTURE_SHEET_MINOR)
   const wsAccept = workbook.getWorksheet(PICTURE_ACCEPT_SHEET)
-  const imageOverflow = { major: [], minor: [], spec: [] }
   if (wsMajor) {
     const majorImages = collectDefectImages(tickets, 'MAJOR')
-    imageOverflow.major = (await fillPictureSheet(workbook, wsMajor, majorImages, onProgress, 'Major')).overflow
+    await fillPictureSheet(workbook, wsMajor, majorImages, onProgress, 'Major')
   }
   if (wsMinor) {
     const minorImages = collectDefectImages(tickets, 'MINOR')
-    imageOverflow.minor = (await fillPictureSheet(workbook, wsMinor, minorImages, onProgress, 'Minor')).overflow
+    await fillPictureSheet(workbook, wsMinor, minorImages, onProgress, 'Minor')
   }
   if (wsAccept) {
     const specImages = collectSpecImages(tickets)
-    imageOverflow.spec = (
-      await fillPictureSheet(workbook, wsAccept, specImages, onProgress, 'Spec', PICTURE_ACCEPT_ROW_STARTS, null)
-    ).overflow
+    await fillPictureSheet(workbook, wsAccept, specImages, onProgress, 'Spec', PICTURE_ACCEPT_ROW_STARTS, null)
   }
 
   const wsMeasurement = workbook.getWorksheet(MEASUREMENT_SHEET)
@@ -772,5 +921,5 @@ export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistVal
 
   downloadBlob(buffer, buildExportFilename(tickets))
 
-  return { overflow, imageOverflow }
+  return { overflow }
 }

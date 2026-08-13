@@ -592,12 +592,14 @@ const SPEC_IMAGE_TYPE_LABELS = {
   SIZE_SPEC: 'Size Spec Sheet',
   PACKING: 'Packing Specification',
   HANGTAG_LABEL: 'Hangtag & Label',
+  PACKING_LIST: 'Packing List',
 }
 // Thứ tự trang "Picture Accept" phải khớp thứ tự các mục upload trong form
-// (GeneralInfoCard.jsx): thùng hộp -> thẻ treo/nhãn -> mẫu duyệt. Sort tường minh
-// ở đây vì mảng ticket.specImages từ BE có thể theo thứ tự cũ (ticket tạo trước
-// khi đổi thứ tự) - không thể trông cậy vào thứ tự BE trả về.
-const SPEC_IMAGE_ORDER = ['PACKING', 'HANGTAG_LABEL', 'APPROVED_SAMPLE', 'SIZE_SPEC']
+// (GeneralInfoCard.jsx): thùng hộp -> thẻ treo/nhãn -> mẫu duyệt -> packing
+// list. Sort tường minh ở đây vì mảng ticket.specImages từ BE có thể theo thứ
+// tự cũ (ticket tạo trước khi đổi thứ tự) - không thể trông cậy vào thứ tự BE
+// trả về.
+const SPEC_IMAGE_ORDER = ['PACKING', 'HANGTAG_LABEL', 'APPROVED_SAMPLE', 'PACKING_LIST', 'SIZE_SPEC']
 function specImageRank(type) {
   const i = SPEC_IMAGE_ORDER.indexOf(type)
   return i === -1 ? SPEC_IMAGE_ORDER.length : i

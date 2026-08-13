@@ -12,6 +12,23 @@ const NAV_ITEMS = [
   { key: 'docs', label: 'Tài liệu tham khảo', disabled: true },
 ]
 
+function LockIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      className="w-4 h-4"
+    >
+      <rect x="5" y="11" width="14" height="9" rx="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 11V7.5a4 4 0 0 1 8 0V11" />
+      <circle cx="12" cy="15.3" r="1.4" />
+    </svg>
+  )
+}
+
 export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapsed, onToggleCollapsed }) {
   const { lang, toggleLang, t } = useLanguage()
   const isAdmin = userInfo?.role === 'ADMIN'
@@ -159,24 +176,30 @@ export default function Sidebar({ view, onNavigate, userInfo, onLogout, collapse
         </nav>
 
         <div className="border-t border-white/10 px-5 py-4 shrink-0">
-          <p className="text-xs text-slate-400">{t('Đăng nhập với')}</p>
-          <p className="text-sm font-medium text-white truncate">
-            {userInfo?.fullName || userInfo?.username}
-          </p>
-          {userInfo?.role && (
-            <p className="text-xs text-slate-400 truncate">{userInfo.role}</p>
-          )}
-          <button
-            type="button"
-            onClick={() => setChangePasswordOpen(true)}
-            className="mt-3 w-full text-sm text-slate-300 hover:text-white border border-white/20 rounded-md py-1.5 hover:bg-brand-navyLight"
-          >
-            {t('Đổi mật khẩu')}
-          </button>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-xs text-slate-400">{t('Đăng nhập với')}</p>
+              <p className="text-sm font-medium text-white truncate">
+                {userInfo?.fullName || userInfo?.username}
+              </p>
+              {userInfo?.role && (
+                <p className="text-xs text-slate-400 truncate">{userInfo.role}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setChangePasswordOpen(true)}
+              title={t('Đổi mật khẩu')}
+              aria-label={t('Đổi mật khẩu')}
+              className="shrink-0 w-8 h-8 flex items-center justify-center text-slate-300 hover:text-white border border-white/20 rounded-md hover:bg-brand-navyLight"
+            >
+              <LockIcon />
+            </button>
+          </div>
           <button
             type="button"
             onClick={onLogout}
-            className="mt-2 w-full text-sm text-slate-300 hover:text-white border border-white/20 rounded-md py-1.5 hover:bg-brand-navyLight"
+            className="mt-3 w-full text-sm text-slate-300 hover:text-white border border-white/20 rounded-md py-1.5 hover:bg-brand-navyLight"
           >
             {t('Đăng xuất')}
           </button>
