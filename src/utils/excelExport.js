@@ -109,6 +109,14 @@ const SPEC_IMAGE_TYPE_LABELS = {
   PACKING: 'Quy cách đóng thùng/Bao bì',
   HANGTAG_LABEL: 'Thẻ treo & Nhãn hiệu',
 }
+// Thứ tự sheet "picture accept" phải khớp thứ tự upload trong form (GeneralInfoCard.jsx):
+// thùng hộp -> thẻ treo/nhãn -> mẫu duyệt. Không trông cậy vào thứ tự BE trả về
+// vì ticket cũ có thể đã lưu specImages theo thứ tự khác.
+const SPEC_IMAGE_ORDER = ['PACKING', 'HANGTAG_LABEL', 'APPROVED_SAMPLE', 'SIZE_SPEC']
+function specImageRank(type) {
+  const i = SPEC_IMAGE_ORDER.indexOf(type)
+  return i === -1 ? SPEC_IMAGE_ORDER.length : i
+}
 
 // Sheet "Measurement sheet": không có khung ảnh cố định như các sheet trên,
 // chỉ có 1 vùng merge DUY NHẤT A4:S55 để chèn ảnh đo thông số (measurementImages).
@@ -436,7 +444,10 @@ function collectDefectImages(tickets, severity) {
 function collectSpecImages(tickets) {
   const entries = []
   for (const ticket of tickets) {
-    for (const img of ticket.specImages || []) {
+    const sorted = [...(ticket.specImages || [])].sort(
+      (a, b) => specImageRank(a.type) - specImageRank(b.type),
+    )
+    for (const img of sorted) {
       if (!img.imageUrl) continue
       entries.push({ name: SPEC_IMAGE_TYPE_LABELS[img.type] || 'Khác', imageUrl: img.imageUrl })
     }

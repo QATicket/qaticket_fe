@@ -120,7 +120,9 @@ export async function apiFetch(path, options = {}) {
 
   let res = await doFetch()
 
-  if (res.status === 401 && needsAuth) {
+  // BE trả 403 (thay vì 401 chuẩn) khi access token hết hạn/không hợp lệ - xử lý
+  // chung với 401 để tự refresh-and-retry, tránh user bị kẹt màn hình lỗi khó hiểu.
+  if ((res.status === 401 || res.status === 403) && needsAuth) {
     try {
       refreshPromise = refreshPromise || doRefresh()
       await refreshPromise
@@ -135,7 +137,7 @@ export async function apiFetch(path, options = {}) {
     if (retryToken) finalHeaders['Authorization'] = `Bearer ${retryToken}`
     res = await doFetch()
 
-    if (res.status === 401) {
+    if (res.status === 401 || res.status === 403) {
       notifySessionExpired()
       throw await parseErrorResponse(res)
     }

@@ -1,6 +1,6 @@
 import { newLocalId, emptySpecImages } from './id'
 
-const SPEC_IMAGE_TYPES = ['APPROVED_SAMPLE', 'SIZE_SPEC', 'PACKING', 'HANGTAG_LABEL']
+const SPEC_IMAGE_TYPES = ['PACKING', 'HANGTAG_LABEL', 'APPROVED_SAMPLE', 'SIZE_SPEC']
 
 // ảnh có type không nằm trong 4 loại đã biết (vd: null, data cũ) rơi vào bucket OTHER để hiển thị fallback
 function groupSpecImages(specImages) {

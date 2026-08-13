@@ -272,13 +272,6 @@ export default function GeneralInfoCard({
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <MultiImageUpload
-              label={t('Mẫu duyệt (Approved Sample)')}
-              urls={form.specImages?.APPROVED_SAMPLE || []}
-              onChange={(urls) =>
-                onChange({ specImages: { ...form.specImages, APPROVED_SAMPLE: urls } })
-              }
-            />
-            <MultiImageUpload
               label={t('Quy cách đóng thùng/Bao bì')}
               urls={form.specImages?.PACKING || []}
               onChange={(urls) =>
@@ -290,6 +283,13 @@ export default function GeneralInfoCard({
               urls={form.specImages?.HANGTAG_LABEL || []}
               onChange={(urls) =>
                 onChange({ specImages: { ...form.specImages, HANGTAG_LABEL: urls } })
+              }
+            />
+            <MultiImageUpload
+              label={t('Mẫu duyệt (Approved Sample)')}
+              urls={form.specImages?.APPROVED_SAMPLE || []}
+              onChange={(urls) =>
+                onChange({ specImages: { ...form.specImages, APPROVED_SAMPLE: urls } })
               }
             />
           </div>
