@@ -19,6 +19,16 @@ import { useLanguage } from '../i18n/LanguageContext'
 const FILTER_INPUT_CLASS =
   'w-full bg-white text-slate-800 border border-slate-300 rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy'
 
+// Đồng bộ với STAGE_OPTIONS trong GeneralInfoCard.jsx (danh sách khâu kiểm của ticket).
+const STAGE_OPTIONS = [
+  { value: 'FIRST_OUTPUT', label: 'First Output' },
+  { value: 'INLINE', label: 'Inline' },
+  { value: 'ENDLINE', label: 'Endline' },
+  { value: 'PREFINAL', label: 'Prefinal' },
+  { value: 'FINAL', label: 'Final' },
+  { value: 'PACKING', label: 'Packing' },
+]
+
 // Màu lấy từ bảng categorical palette đã kiểm định (xem dataviz skill) - dùng
 // đúng thứ tự slot 1..5 cho 5 card, giữ nguyên hex, không tự chế màu mới.
 const CARD_BORDER_COLORS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4']
@@ -97,7 +107,7 @@ export default function QaDashboard({ userInfo }) {
   const [error, setError] = useState('')
   const [factoryOptions, setFactoryOptions] = useState([])
   const [staffOptions, setStaffOptions] = useState([])
-  const [filters, setFilters] = useState({ staffId: '', factoryId: '' })
+  const [filters, setFilters] = useState({ staffId: '', factoryId: '', stage: '' })
 
   useEffect(() => {
     getFactories()
@@ -116,11 +126,15 @@ export default function QaDashboard({ userInfo }) {
   useEffect(() => {
     setLoading(true)
     setError('')
-    getQaDashboard({ staffId: filters.staffId || undefined, factoryId: filters.factoryId || undefined })
+    getQaDashboard({
+      staffId: filters.staffId || undefined,
+      factoryId: filters.factoryId || undefined,
+      inspectionStage: filters.stage || undefined,
+    })
       .then(setData)
       .catch((err) => setError(err.message || t('Không tải được dữ liệu dashboard')))
       .finally(() => setLoading(false))
-  }, [filters.staffId, filters.factoryId])
+  }, [filters.staffId, filters.factoryId, filters.stage])
 
   function updateFilter(key, value) {
     setFilters((f) => ({ ...f, [key]: value }))
@@ -169,6 +183,21 @@ export default function QaDashboard({ userInfo }) {
                 </select>
               </div>
             )}
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">{t('Khâu kiểm tra')}</label>
+              <select
+                className={FILTER_INPUT_CLASS}
+                value={filters.stage}
+                onChange={(e) => updateFilter('stage', e.target.value)}
+              >
+                <option value="">{t('Tất cả')}</option>
+                {STAGE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 

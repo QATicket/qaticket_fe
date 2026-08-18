@@ -46,7 +46,7 @@ export function emptyFormState() {
     inspectionStage: 'INLINE',
     poNumber: '',
     style: '',
-    inspectedQty: 1,
+    inspectedQty: 10,
     customerName: '',
     garmentTypeId: null,
     status: 'DRAFT',

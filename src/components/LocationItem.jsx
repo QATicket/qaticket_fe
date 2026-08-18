@@ -35,7 +35,8 @@ export default function LocationItem({
       const failedCount = results.length - converted.length
       if (converted.length > 0) {
         const urls = await uploadImages(converted)
-        onChange({ images: [...location.images, ...urls] })
+        const images = [...location.images, ...urls]
+        onChange({ images, quantity: images.length })
       }
       if (failedCount > 0) {
         setUploadError(t('{{n}} ảnh không đọc được, vui lòng thử ảnh khác', { n: failedCount }))
@@ -48,7 +49,8 @@ export default function LocationItem({
   }
 
   function removeImage(url) {
-    onChange({ images: location.images.filter((img) => img !== url) })
+    const images = location.images.filter((img) => img !== url)
+    onChange({ images, quantity: images.length })
   }
 
   return (

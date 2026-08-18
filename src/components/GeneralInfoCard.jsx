@@ -21,6 +21,10 @@ const STAGE_OPTIONS = [
 // Prefinal dùng chung mẫu báo cáo (BB_PREFINAL_FINAL) và logic AQL/Spec Images với Final.
 const AQL_STAGES = ['FINAL', 'PREFINAL']
 
+// Các khâu này không dùng AQL nên Inspected Qty nhập tay - mặc định 10 thay vì
+// để 1 (dễ nhầm là chưa nhập), chỉ áp khi người dùng chưa tự sửa giá trị mặc định.
+const DEFAULT_QTY_STAGES = ['FIRST_OUTPUT', 'INLINE', 'ENDLINE']
+
 export default function GeneralInfoCard({
   form,
   onChange,
@@ -115,7 +119,17 @@ export default function GeneralInfoCard({
           <select
             className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy"
             value={form.inspectionStage}
-            onChange={(e) => onChange({ inspectionStage: e.target.value })}
+            onChange={(e) => {
+              const stage = e.target.value
+              const patch = { inspectionStage: stage }
+              const isDefaultQtyStage = DEFAULT_QTY_STAGES.includes(stage)
+              if (isDefaultQtyStage && (!form.inspectedQty || form.inspectedQty === 1)) {
+                patch.inspectedQty = 10
+              } else if (!isDefaultQtyStage && form.inspectedQty === 10) {
+                patch.inspectedQty = 1
+              }
+              onChange(patch)
+            }}
           >
             {STAGE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
