@@ -394,7 +394,11 @@ export default function TicketListPage({ userInfo, onEdit }) {
             </thead>
             <tbody>
               {items.map((row) => (
-                <tr key={row.id} className="border-b border-slate-100 hover:bg-slate-50">
+                <tr
+                  key={row.id}
+                  onClick={() => setViewingTicketId(row.id)}
+                  className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
+                >
                   <td className="px-4 py-2 font-medium text-brand-navy">{row.ticketCode}</td>
                   <td className="px-4 py-2">{row.staffName}</td>
                   <td className="px-4 py-2">{row.factoryName}</td>
@@ -425,12 +429,11 @@ export default function TicketListPage({ userInfo, onEdit }) {
                   <td className="px-4 py-2 text-slate-500">
                     {row.createdAt ? new Date(row.createdAt).toLocaleString('vi-VN') : ''}
                   </td>
-                  <td className="px-4 py-2">
+                  <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                     <TicketRowActions
                       ticket={row}
                       busy={busyId === row.id}
                       isAdmin={isAdmin}
-                      onView={() => setViewingTicketId(row.id)}
                       onEdit={() => onEdit(row.id)}
                       onExportPdf={() => handleExportPdf(row)}
                       onExportExcel={() => handleExportExcel(row)}

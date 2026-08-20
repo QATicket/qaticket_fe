@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getDefects } from '../api/master'
+import { deleteDefect } from '../api/admin'
 import DefectFormModal from './DefectFormModal'
 import { useLanguage } from '../i18n/LanguageContext'
 
@@ -10,6 +11,21 @@ export default function DefectManagementTab() {
   const [error, setError] = useState('')
   const [modalItem, setModalItem] = useState(null)
   const [createOpen, setCreateOpen] = useState(false)
+  const [busyId, setBusyId] = useState(null)
+
+  async function handleDelete(id) {
+    if (!window.confirm(t('Xoá nhóm lỗi này?'))) return
+    setBusyId(id)
+    setError('')
+    try {
+      await deleteDefect(id)
+      setItems((prev) => prev.filter((row) => row.id !== id))
+    } catch (err) {
+      setError(err.message || t('Xoá nhóm lỗi thất bại'))
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   async function load() {
     setLoading(true)
@@ -70,6 +86,14 @@ export default function DefectManagementTab() {
                     className="text-sm text-brand-navy hover:underline"
                   >
                     {t('Sửa')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(d.id)}
+                    disabled={busyId === d.id}
+                    className="text-sm text-brand-red hover:underline ml-3 disabled:opacity-50"
+                  >
+                    {t('Xoá')}
                   </button>
                 </td>
               </tr>

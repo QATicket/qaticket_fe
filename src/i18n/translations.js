@@ -180,6 +180,10 @@ export const en = {
   'Sản lượng kiểm tra': 'Inspected Qty',
   'Kết quả AQL': 'AQL Result',
   'Hình ảnh Spec': 'Spec Images',
+  'Lưu ý thông số': 'Spec Note',
+  'Lưu ý chất lượng': 'Quality Note',
+  'Nhập lưu ý thông số (nếu có)': 'Enter spec note (optional)',
+  'Nhập lưu ý chất lượng (nếu có)': 'Enter quality note (optional)',
   'Defects ({{count}})': 'Defects ({{count}})',
   'Ghi chú:': 'Note:',
   'SL:': 'Qty:',
@@ -284,6 +288,8 @@ export const en = {
   'Tên (Tiếng Việt)': 'Name (Vietnamese)',
   'Tên (Tiếng Anh)': 'Name (English)',
   'Chưa có nhóm lỗi nào': 'No defect groups yet',
+  'Xoá nhóm lỗi này?': 'Delete this defect group?',
+  'Xoá nhóm lỗi thất bại': 'Failed to delete defect group',
 
   // -- DefectFormModal --
   'Vui lòng nhập tên lỗi (tiếng Việt)': 'Please enter the defect name (Vietnamese)',
@@ -300,6 +306,8 @@ export const en = {
   'Không tải được danh sách lỗi chi tiết': 'Failed to load defect item list',
   '+ Thêm lỗi chi tiết': '+ Add Defect Item',
   'Chưa có lỗi chi tiết nào': 'No defect items yet',
+  'Xoá lỗi chi tiết này?': 'Delete this defect item?',
+  'Xoá lỗi chi tiết thất bại': 'Failed to delete defect item',
 
   // -- DefectItemFormModal --
   'Vui lòng chọn nhóm lỗi': 'Please select a defect group',
@@ -315,6 +323,8 @@ export const en = {
   '+ Thêm vị trí': '+ Add Location',
   'Tên vị trí': 'Location Name',
   'Chưa có vị trí nào': 'No locations yet',
+  'Xoá vị trí này?': 'Delete this location?',
+  'Xoá vị trí thất bại': 'Failed to delete location',
 
   // -- GarmentLocationFormModal --
   'Vui lòng chọn loại sản phẩm': 'Please select a garment type',

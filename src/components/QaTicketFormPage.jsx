@@ -248,6 +248,10 @@ export default function QaTicketFormPage({ userInfo, ticketId, onBackToList }) {
             garmentLocationOptions={garmentLocationOptions}
             onChange={(defects) => patchForm({ defects })}
             errors={errors}
+            specNote={form.specNote}
+            qualityNote={form.qualityNote}
+            onSpecNoteChange={(v) => patchForm({ specNote: v })}
+            onQualityNoteChange={(v) => patchForm({ qualityNote: v })}
           />
 
           <div className="flex justify-end gap-3 pb-8">

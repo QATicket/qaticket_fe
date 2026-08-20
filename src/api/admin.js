@@ -30,3 +30,11 @@ export const createGarmentLocation = (data) =>
 
 export const updateGarmentLocation = (id, data) =>
   apiFetch(`/api/admin/garment-locations/${id}`, { method: 'PUT', body: data })
+
+export const deleteDefect = (id) => apiFetch(`/api/admin/defects/${id}`, { method: 'DELETE' })
+
+export const deleteDefectItem = (id) =>
+  apiFetch(`/api/admin/defect-items/${id}`, { method: 'DELETE' })
+
+export const deleteGarmentLocation = (id) =>
+  apiFetch(`/api/admin/garment-locations/${id}`, { method: 'DELETE' })

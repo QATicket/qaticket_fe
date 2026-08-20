@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getGarmentTypes, getGarmentLocations } from '../api/master'
+import { deleteGarmentLocation } from '../api/admin'
 import GarmentLocationFormModal from './GarmentLocationFormModal'
 import { useLanguage } from '../i18n/LanguageContext'
 
@@ -12,6 +13,21 @@ export default function GarmentLocationManagementTab() {
   const [error, setError] = useState('')
   const [modalItem, setModalItem] = useState(null)
   const [createOpen, setCreateOpen] = useState(false)
+  const [busyId, setBusyId] = useState(null)
+
+  async function handleDelete(id) {
+    if (!window.confirm(t('Xoá vị trí này?'))) return
+    setBusyId(id)
+    setError('')
+    try {
+      await deleteGarmentLocation(id)
+      setItems((prev) => prev.filter((row) => row.id !== id))
+    } catch (err) {
+      setError(err.message || t('Xoá vị trí thất bại'))
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   useEffect(() => {
     getGarmentTypes()
@@ -94,6 +110,14 @@ export default function GarmentLocationManagementTab() {
                     className="text-sm text-brand-navy hover:underline"
                   >
                     {t('Sửa')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(loc.id)}
+                    disabled={busyId === loc.id}
+                    className="text-sm text-brand-red hover:underline ml-3 disabled:opacity-50"
+                  >
+                    {t('Xoá')}
                   </button>
                 </td>
               </tr>

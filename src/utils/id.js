@@ -49,6 +49,8 @@ export function emptyFormState() {
     inspectedQty: 10,
     customerName: '',
     garmentTypeId: null,
+    specNote: '',
+    qualityNote: '',
     status: 'DRAFT',
     id: null,
     ticketCode: null,

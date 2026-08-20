@@ -6,7 +6,6 @@ export default function TicketRowActions({
   ticket,
   busy,
   isAdmin,
-  onView,
   onEdit,
   onExportPdf,
   onExportExcel,
@@ -81,13 +80,6 @@ export default function TicketRowActions({
             style={{ position: 'absolute', top: menuPos.top, left: menuPos.left }}
             className="w-36 bg-white border border-slate-200 rounded-md shadow-lg z-50 py-1"
           >
-            <button
-              type="button"
-              onClick={() => runAndClose(onView)}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50"
-            >
-              {t('Xem chi tiết')}
-            </button>
             <button
               type="button"
               onClick={() => runAndClose(onEdit)}

@@ -136,18 +136,36 @@ const INSPECTION_STAGE_TITLE_LABELS = {
   PACKING: { en: 'Packing', vi: 'PACKING' },
 }
 
-// Màu tô B105/B106/B107 (Pass/Rejected/Pending) - đúng ARGB dùng trong
-// excelExport.js (AQL_RESULT_FILL_ARGB), quy đổi sang RGB thập phân cho jsPDF.
+// Bảng màu chuẩn theo yêu cầu (dùng cho cả badge "Kết quả AQL" ở đầu trang
+// và các ô tô màu trong "Inspection Result - Kết quả").
 const RESULT_COLOR = {
-  PASS: [198, 239, 206],
-  REJECTED: [255, 199, 206],
-  PENDING: [255, 235, 156],
+  PASS: [45, 201, 55], // #2DC937
+  REJECTED: [184, 27, 14], // #B81B0E
+  PENDING: [254, 220, 57], // #FEDC39
 }
 const RESULT_LABEL_ROWS = [
   { key: 'PASS', label: 'Pass - Đạt :' },
   { key: 'REJECTED', label: 'Rejected - K.đạt :' },
   { key: 'PENDING', label: 'Pending - Treo :' },
 ]
+const RESULT_LABEL_SHORT = {
+  PASS: 'Pass - Đạt',
+  REJECTED: 'Rejected - K.đạt',
+  PENDING: 'Pending - Treo',
+}
+
+// Nguồn chung duy nhất cho việc suy ra kết quả AQL hiển thị (PASS/REJECTED/
+// PENDING) - dùng cả cho badge đầu trang lẫn drawResultSection() để không bị
+// lệch logic Pending giữa 2 nơi (Pending là lớp phủ lên Pass, xem thêm ghi
+// chú trong drawResultSection()).
+function computeDisplayResult(ticket, qcChecklistValues) {
+  const result = resolveAqlResult(ticket)
+  if (!result) return null
+  const withinAql = result === 'PASS' || result === 'PENDING'
+  const isPending = withinAql && (qcChecklistValues?.[AQL_PENDING_FLAG_KEY] === true || result === 'PENDING')
+  const key = isPending ? 'PENDING' : result === 'REJECTED' ? 'REJECTED' : 'PASS'
+  return { key, label: RESULT_LABEL_SHORT[key] }
+}
 
 function lookupAqlAllowance(samplingSize, aqlLevel) {
   const thresholds = lookupAqlThresholds(samplingSize, aqlLevel)
@@ -170,6 +188,30 @@ function drawTitle(doc, ticket) {
   doc.text(`BIÊN BẢN KIỂM TRA ${stage.vi}`, PAGE_WIDTH / 2, y + 12, { align: 'center' })
 
   return y + 18
+}
+
+// Badge "Kết quả AQL" đặt ở góc phải, ngay phía trên ô giá trị AQL Level
+// (cột cuối, dòng đầu của bảng header vẽ ở drawHeaderInfoTable()) - chỉ vẽ
+// khi đã có kết quả (không hiện gì nếu ticket chưa đủ dữ liệu để tính AQL).
+function drawAqlResultBadge(doc, ticket, qcChecklistValues, tableStartY) {
+  const resolved = computeDisplayResult(ticket, qcChecklistValues)
+  if (!resolved) return
+
+  const text = `Kết quả AQL: ${resolved.label}`
+  doc.setFont(FONT_FAMILY, 'bold')
+  doc.setFontSize(9)
+  const textWidth = doc.getTextWidth(text)
+  const paddingX = 3
+  const boxWidth = textWidth + paddingX * 2
+  const boxHeight = 6
+  const x = PAGE_WIDTH - PAGE_MARGIN - boxWidth
+  const y = tableStartY - boxHeight - 1
+
+  doc.setFillColor(...RESULT_COLOR[resolved.key])
+  doc.roundedRect(x, y, boxWidth, boxHeight, 1, 1, 'F')
+  doc.setTextColor(...(resolved.key === 'PENDING' ? [20, 20, 20] : [255, 255, 255]))
+  doc.text(text, x + boxWidth / 2, y + boxHeight / 2 + 1.1, { align: 'center' })
+  doc.setTextColor(20)
 }
 
 function drawHeaderInfoTable(doc, ticket, startY) {
@@ -482,13 +524,14 @@ function drawResultSection(doc, startY, ticket, qcChecklistValues) {
   const allowance = lookupAqlAllowance(ticket.samplingSize, ticket.aqlLevel)
 
   // Pending là lớp phủ lên Pass (vẫn trong AQL), không phải trạng thái loại
-  // trừ Pass như Reject - xem writeAqlResultCell() trong excelExport.js (cùng
-  // logic, giữ đồng bộ 2 nơi). resolveAqlResult() tự tính PASS/REJECTED khi
-  // ticket.inspectionResult chưa được BE tính (field hay bị null).
-  const result = resolveAqlResult(ticket)
-  const withinAql = result === 'PASS' || result === 'PENDING'
-  const isPending = withinAql && (qcChecklistValues?.[AQL_PENDING_FLAG_KEY] === true || result === 'PENDING')
-  const shouldFill = { PASS: withinAql, REJECTED: result === 'REJECTED', PENDING: isPending }
+  // trừ Pass như Reject - xem writeAqlResultCell() trong excelExport.js và
+  // computeDisplayResult() ở trên (cùng logic, giữ đồng bộ giữa 3 nơi).
+  const resolved = computeDisplayResult(ticket, qcChecklistValues)
+  const shouldFill = {
+    PASS: resolved?.key === 'PASS',
+    REJECTED: resolved?.key === 'REJECTED',
+    PENDING: resolved?.key === 'PENDING',
+  }
 
   const body = RESULT_LABEL_ROWS.map(({ key, label }) => [
     { content: label, styles: { fontStyle: 'bold' } },
@@ -521,7 +564,7 @@ function drawResultSection(doc, startY, ticket, qcChecklistValues) {
 
   y = doc.lastAutoTable.finalY + 5
 
-  const reason = isPending ? (qcChecklistValues?.[AQL_PENDING_REASON_KEY] || '').trim() : ''
+  const reason = resolved?.key === 'PENDING' ? (qcChecklistValues?.[AQL_PENDING_REASON_KEY] || '').trim() : ''
   if (reason) {
     const lines = doc.splitTextToSize(`Lý do Pending - Treo: ${reason}`, CONTENT_WIDTH)
     y = ensureSpace(doc, y, lines.length * 4 + 3)
@@ -573,6 +616,7 @@ function drawPackingShipmentSection(doc, startY, qcChecklistValues) {
 
 function drawMainReportPages(doc, ticket, qcChecklistValues) {
   let y = drawTitle(doc, ticket)
+  drawAqlResultBadge(doc, ticket, qcChecklistValues, y)
   y = drawHeaderInfoTable(doc, ticket, y)
   y = drawMaterialsSection(doc, y, qcChecklistValues)
   y = drawInspectionPointsSection(doc, y, ticket)

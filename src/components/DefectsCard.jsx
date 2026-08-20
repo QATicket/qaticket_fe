@@ -8,6 +8,10 @@ export default function DefectsCard({
   garmentLocationOptions,
   onChange,
   errors,
+  specNote,
+  qualityNote,
+  onSpecNoteChange,
+  onQualityNoteChange,
 }) {
   const { t } = useLanguage()
   function updateDefect(localId, patch) {
@@ -75,6 +79,29 @@ export default function DefectsCard({
           + Add Defect
         </button>
       )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200">
+        <div>
+          <label className="block text-xs font-medium text-slate-500 mb-1">{t('Lưu ý thông số')}</label>
+          <textarea
+            className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy"
+            rows={2}
+            value={specNote || ''}
+            onChange={(e) => onSpecNoteChange(e.target.value)}
+            placeholder={t('Nhập lưu ý thông số (nếu có)')}
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-500 mb-1">{t('Lưu ý chất lượng')}</label>
+          <textarea
+            className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-navy"
+            rows={2}
+            value={qualityNote || ''}
+            onChange={(e) => onQualityNoteChange(e.target.value)}
+            placeholder={t('Nhập lưu ý chất lượng (nếu có)')}
+          />
+        </div>
+      </div>
     </div>
   )
 }

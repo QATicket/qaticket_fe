@@ -104,6 +104,27 @@ export default function TicketDetailModal({ ticketId, onClose }) {
                 )}
               </div>
 
+              {(ticket.specNote || ticket.qualityNote) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                  {ticket.specNote && (
+                    <div>
+                      <h3 className="font-semibold text-slate-700 text-sm mb-1">
+                        {t('Lưu ý thông số')}
+                      </h3>
+                      <p className="text-sm text-slate-600 whitespace-pre-wrap">{ticket.specNote}</p>
+                    </div>
+                  )}
+                  {ticket.qualityNote && (
+                    <div>
+                      <h3 className="font-semibold text-slate-700 text-sm mb-1">
+                        {t('Lưu ý chất lượng')}
+                      </h3>
+                      <p className="text-sm text-slate-600 whitespace-pre-wrap">{ticket.qualityNote}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {ticket.measurementImages?.length > 0 && (
                 <div className="mb-5">
                   <h3 className="font-semibold text-slate-700 text-sm mb-2">{t('Hình ảnh thông số')}</h3>
