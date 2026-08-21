@@ -341,6 +341,39 @@ function drawInspectionPointsSection(doc, startY, ticket) {
       3: { cellWidth: 40 },
     },
   })
+
+  return doc.lastAutoTable.finalY + 4
+}
+
+// Lưu ý thông số/chất lượng (specNote/qualityNote) nhập ở form, hiển thị trong
+// modal xem chi tiết (xem TicketDetailModal.jsx) - chỉ vẽ hàng nào có dữ liệu,
+// bỏ hẳn cả bảng nếu ticket không có ghi chú nào.
+function drawNotesSection(doc, startY, ticket) {
+  const body = []
+  if (ticket.specNote) body.push(['Spec Note', ticket.specNote])
+  if (ticket.qualityNote) body.push(['Quality Note', ticket.qualityNote])
+  if (body.length === 0) return startY
+
+  autoTable(doc, {
+    startY,
+    margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
+    body,
+    theme: 'grid',
+    styles: {
+      font: FONT_FAMILY,
+      fontSize: 8.5,
+      cellPadding: 1.8,
+      lineColor: BORDER_COLOR,
+      lineWidth: BORDER_WIDTH,
+      textColor: 20,
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', fillColor: [245, 245, 245], cellWidth: CONTENT_WIDTH * 0.2 },
+      1: { cellWidth: CONTENT_WIDTH * 0.8 },
+    },
+  })
+
+  return doc.lastAutoTable.finalY + 4
 }
 
 function collectDefectImagesForPdf(ticket, severity) {
@@ -445,7 +478,8 @@ export async function exportTicketPdf(ticketId, { onProgress, qcChecklistValues 
   })
   y = drawMaterialsSection(doc, y, qcChecklistValues)
   onProgress?.('Building Inspection Points table...')
-  drawInspectionPointsSection(doc, y, ticket)
+  y = drawInspectionPointsSection(doc, y, ticket)
+  drawNotesSection(doc, y, ticket)
 
   onProgress?.('Inserting measurement images...')
   await drawPictureGridPage(doc, ticket, 'Measurement sheet', ticket.measurementImages || [], {

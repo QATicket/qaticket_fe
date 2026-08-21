@@ -450,6 +450,40 @@ function drawInspectionPointsSection(doc, startY, ticket) {
   return doc.lastAutoTable.finalY + 5
 }
 
+// Lưu ý thông số/chất lượng (specNote/qualityNote) nhập ở form, hiển thị trong
+// modal xem chi tiết (xem TicketDetailModal.jsx) - không thuộc layout gốc của
+// file mẫu Excel nhưng vẫn cần xuất ra PDF nên chèn thêm ở đây, chỉ vẽ hàng
+// nào có dữ liệu, bỏ hẳn cả bảng nếu ticket không có ghi chú nào.
+function drawNotesSection(doc, startY, ticket) {
+  const body = []
+  if (ticket.specNote) body.push(['Spec Note - Lưu ý thông số', ticket.specNote])
+  if (ticket.qualityNote) body.push(['Quality Note - Lưu ý chất lượng', ticket.qualityNote])
+  if (body.length === 0) return startY
+
+  const y = ensureSpace(doc, startY, 16)
+
+  autoTable(doc, {
+    startY: y,
+    margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
+    body,
+    theme: 'grid',
+    styles: {
+      font: FONT_FAMILY,
+      fontSize: 8.5,
+      cellPadding: 1.8,
+      lineColor: BORDER_COLOR,
+      lineWidth: BORDER_WIDTH,
+      textColor: 20,
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', fillColor: [245, 245, 245], cellWidth: 45 },
+      1: { cellWidth: CONTENT_WIDTH - 45 },
+    },
+  })
+
+  return doc.lastAutoTable.finalY + 5
+}
+
 function drawAqlSamplingTable(doc, startY, ticket) {
   let y = ensureSpace(doc, startY, 20)
   doc.setFont(FONT_FAMILY, 'bold')
@@ -620,6 +654,7 @@ function drawMainReportPages(doc, ticket, qcChecklistValues) {
   y = drawHeaderInfoTable(doc, ticket, y)
   y = drawMaterialsSection(doc, y, qcChecklistValues)
   y = drawInspectionPointsSection(doc, y, ticket)
+  y = drawNotesSection(doc, y, ticket)
   y = drawAqlSamplingTable(doc, y, ticket)
   y = drawResultSection(doc, y, ticket, qcChecklistValues)
   drawPackingShipmentSection(doc, y, qcChecklistValues)
