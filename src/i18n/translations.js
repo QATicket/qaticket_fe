@@ -278,6 +278,7 @@ export const en = {
   'Nhóm lỗi': 'Defect Group',
   'Lỗi chi tiết': 'Defect Item',
   'Vị trí trên sản phẩm': 'Garment Location',
+  'Nhà máy': 'Factory',
 
   // -- DefectManagementTab --
   'Nhóm lỗi dùng làm danh mục cha cho các lỗi chi tiết.':
@@ -332,4 +333,25 @@ export const en = {
   'Lưu vị trí thất bại': 'Failed to save location',
   'Sửa vị trí': 'Edit Location',
   'Thêm vị trí': 'Add Location',
+
+  // -- QcChecklistModal --
+  '7. Thông tin bổ sung (không bắt buộc)': '7. Additional Info (optional)',
+
+  // -- FactoryManagementTab --
+  'Nhà máy dùng làm danh mục cho chuyền/line và phiếu kiểm.':
+    'Factories are used as the category for lines and inspection tickets.',
+  'Không tải được danh sách nhà máy': 'Failed to load factory list',
+  '+ Thêm nhà máy': '+ Add Factory',
+  'Tên nhà máy': 'Factory Name',
+  'Địa chỉ': 'Address',
+  'Chưa có nhà máy nào': 'No factories yet',
+  'Xoá nhà máy này?': 'Delete this factory?',
+  'Xoá nhà máy thất bại': 'Failed to delete factory',
+
+  // -- FactoryFormModal --
+  'Vui lòng nhập tên nhà máy': 'Please enter the factory name',
+  'Lưu nhà máy thất bại': 'Failed to save factory',
+  'Sửa nhà máy': 'Edit Factory',
+  'Thêm nhà máy': 'Add Factory',
+  'Mã nhà máy': 'Factory Code',
 }

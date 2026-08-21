@@ -2,12 +2,14 @@ import { useState } from 'react'
 import DefectManagementTab from './DefectManagementTab'
 import DefectItemManagementTab from './DefectItemManagementTab'
 import GarmentLocationManagementTab from './GarmentLocationManagementTab'
+import FactoryManagementTab from './FactoryManagementTab'
 import { useLanguage } from '../i18n/LanguageContext'
 
 const TABS = [
   { key: 'defects', label: 'Nhóm lỗi' },
   { key: 'defectItems', label: 'Lỗi chi tiết' },
   { key: 'garmentLocations', label: 'Vị trí trên sản phẩm' },
+  { key: 'factories', label: 'Nhà máy' },
 ]
 
 export default function CatalogManagementPage() {
@@ -40,6 +42,7 @@ export default function CatalogManagementPage() {
         {tab === 'defects' && <DefectManagementTab />}
         {tab === 'defectItems' && <DefectItemManagementTab />}
         {tab === 'garmentLocations' && <GarmentLocationManagementTab />}
+        {tab === 'factories' && <FactoryManagementTab />}
       </div>
     </div>
   )

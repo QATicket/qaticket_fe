@@ -23,9 +23,6 @@ export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'E
   const [aqlPending, setAqlPending] = useState(false)
   const [aqlPendingReason, setAqlPendingReason] = useState('')
   const [extraInfo, setExtraInfo] = useState(defaultExtraInfoValues)
-  // Bước 2 (thông tin bổ sung, không bắt buộc) chỉ hiện SAU khi xác nhận xong v/x -
-  // xem gridGroups/nút "Tiếp tục" bên dưới.
-  const [step, setStep] = useState(1)
 
   function setItemValue(itemId, value) {
     setValues((prev) => ({ ...prev, [itemId]: value }))
@@ -58,9 +55,7 @@ export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'E
       <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl my-6">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <h2 className="font-bold text-slate-800">
-            {step === 1
-              ? t('Chọn v/x tiêu chí trước khi xuất {{label}}', { label: exportLabel })
-              : t('Thông tin bổ sung (không bắt buộc)')}
+            {t('Chọn v/x tiêu chí trước khi xuất {{label}}', { label: exportLabel })}
           </h2>
           <button
             type="button"
@@ -72,8 +67,6 @@ export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'E
         </div>
 
         <div className="px-5 py-4 max-h-[70vh] overflow-y-auto">
-          {step === 1 && (
-          <>
           <p className="text-xs text-slate-400 mb-4">
             {t('Mặc định tất cả là "v" (đạt). Tick "x" cho tiêu chí không đạt.')}
           </p>
@@ -215,15 +208,11 @@ export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'E
                 </div>
               ),
             )}
-          </div>
-          </>
-          )}
 
-          {step === 2 && (
-            <div>
-              <p className="text-xs text-slate-400 mb-4">
-                {t('Các thông tin dưới đây chưa có sẵn trong hệ thống, không bắt buộc điền - có thể bỏ qua.')}
-              </p>
+            <div className="border border-slate-200 rounded-md p-3 sm:col-span-2">
+              <h3 className="text-sm font-semibold text-slate-700 mb-2">
+                {t('7. Thông tin bổ sung (không bắt buộc)')}
+              </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {EXTRA_INFO_FIELDS.map((field) => (
                   <div key={field.key}>
@@ -239,69 +228,32 @@ export default function QcChecklistModal({ onConfirm, onCancel, exportLabel = 'E
                 ))}
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-slate-200">
-          {step === 1 && (
-            <>
-              <button
-                type="button"
-                onClick={onCancel}
-                className="text-sm text-slate-500 hover:text-brand-red underline"
-              >
-                {t('Huỷ')}
-              </button>
-              <button
-                type="button"
-                disabled={pendingReasonMissing}
-                onClick={() => setStep(2)}
-                className="bg-brand-navy text-white text-sm font-medium rounded-md px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {t('Tiếp tục')}
-              </button>
-            </>
-          )}
-
-          {step === 2 && (
-            <>
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="text-sm text-slate-500 hover:text-brand-navy underline"
-              >
-                {t('Quay lại')}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  onConfirm({
-                    ...values,
-                    ...defaultExtraInfoValues(),
-                    [AQL_PENDING_FLAG_KEY]: aqlPending,
-                    [AQL_PENDING_REASON_KEY]: aqlPending ? aqlPendingReason.trim() : '',
-                  })
-                }
-                className="text-sm text-slate-500 hover:text-brand-red underline"
-              >
-                {t('Bỏ qua')}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  onConfirm({
-                    ...values,
-                    ...extraInfo,
-                    [AQL_PENDING_FLAG_KEY]: aqlPending,
-                    [AQL_PENDING_REASON_KEY]: aqlPending ? aqlPendingReason.trim() : '',
-                  })
-                }
-                className="bg-brand-navy text-white text-sm font-medium rounded-md px-4 py-2 hover:opacity-90"
-              >
-                {t('Xác nhận & Xuất {{label}}', { label: exportLabel })}
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-sm text-slate-500 hover:text-brand-red underline"
+          >
+            {t('Huỷ')}
+          </button>
+          <button
+            type="button"
+            disabled={pendingReasonMissing}
+            onClick={() =>
+              onConfirm({
+                ...values,
+                ...extraInfo,
+                [AQL_PENDING_FLAG_KEY]: aqlPending,
+                [AQL_PENDING_REASON_KEY]: aqlPending ? aqlPendingReason.trim() : '',
+              })
+            }
+            className="bg-brand-navy text-white text-sm font-medium rounded-md px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {t('Xác nhận & Xuất {{label}}', { label: exportLabel })}
+          </button>
         </div>
       </div>
     </div>

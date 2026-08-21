@@ -38,3 +38,10 @@ export const deleteDefectItem = (id) =>
 
 export const deleteGarmentLocation = (id) =>
   apiFetch(`/api/admin/garment-locations/${id}`, { method: 'DELETE' })
+
+export const createFactory = (data) => apiFetch('/api/admin/factories', { method: 'POST', body: data })
+
+export const updateFactory = (id, data) =>
+  apiFetch(`/api/admin/factories/${id}`, { method: 'PUT', body: data })
+
+export const deleteFactory = (id) => apiFetch(`/api/admin/factories/${id}`, { method: 'DELETE' })
