@@ -214,7 +214,7 @@ function drawAqlResultBadge(doc, ticket, qcChecklistValues, tableStartY) {
   doc.setTextColor(20)
 }
 
-function drawHeaderInfoTable(doc, ticket, startY) {
+function drawHeaderInfoTable(doc, ticket, startY, qcChecklistValues) {
   const stageLabel = STAGE_LABEL[ticket.inspectionStage] || ticket.inspectionStage || '—'
   const aqlLabel = ticket.aqlLevel === '1.5' || ticket.aqlLevel === '2.5' ? `AQL ${ticket.aqlLevel}` : '—'
   // qtySize/samplingSize chỉ được BE lưu cho FINAL/PREFINAL (xem toPayload() trong
@@ -223,17 +223,25 @@ function drawHeaderInfoTable(doc, ticket, startY) {
   // bắt buộc cho MỌI stage - xem validate.js) để ô này luôn có giá trị.
   const sampleSize = ticket.samplingSize ?? ticket.inspectedQty ?? '—'
 
+  // shipmentDate/mda/cuttingQty/sewingQty/pressingQty/packingQty không có trong
+  // ticket/BE (xem EXTRA_INFO_FIELDS trong qcChecklist.js) - QC tự nhập tay ở
+  // QcChecklistModal ngay lúc xuất, không bắt buộc nên để trống thì hiện "—" như cũ.
+  const extra = (key) => {
+    const v = qcChecklistValues?.[key]
+    return v === undefined || v === null || v === '' ? '—' : v
+  }
+
   const rows = [
     ['Inspection Stage - Loại kiểm tra', stageLabel, 'AQL Level', aqlLabel],
     ['Customer (KH)', ticket.customerName || '—', 'PO', ticket.poNumber || '—'],
     ['Style (mã hàng)', ticket.style || '—', 'Date (Ngày)', formatDateOnly(ticket.createdAt)],
     ['Order Qty (SL)', ticket.qtySize ?? '—', 'Sample size (SL mẫu)', sampleSize],
-    ['Shipment date\nNgày xuất', '—', 'MDA#', '—'],
+    ['Shipment date\nNgày xuất', extra('shipmentDate'), 'MDA#', extra('mda')],
     ['Inspector\nNgười kiểm tra', ticket.staff?.name || '—', '', ''],
     ['Supplier', 'NHA BE', 'Location', 'VIET NAM'],
     ['Fty Name', ticket.factory?.name || '—', 'Line', ticket.line?.name || '—'],
-    ['Cutting Qty\nSL cắt', '—', 'Sewing Qty\nSL may', '—'],
-    ['Pressing Qty\nSL ủi, ép', '—', 'Packing Qty\nSL đóng gói', '—'],
+    ['Cutting Qty\nSL cắt', extra('cuttingQty'), 'Sewing Qty\nSL may', extra('sewingQty')],
+    ['Pressing Qty\nSL ủi, ép', extra('pressingQty'), 'Packing Qty\nSL đóng gói', extra('packingQty')],
   ]
 
   autoTable(doc, {
@@ -476,8 +484,8 @@ function drawNotesSection(doc, startY, ticket) {
       textColor: 20,
     },
     columnStyles: {
-      0: { fontStyle: 'bold', fillColor: [245, 245, 245], cellWidth: 45 },
-      1: { cellWidth: CONTENT_WIDTH - 45 },
+      0: { fontStyle: 'bold', fillColor: [255, 127, 127], cellWidth: 45 },
+      1: { fillColor: [255, 127, 127], cellWidth: CONTENT_WIDTH - 45 },
     },
   })
 
@@ -651,7 +659,7 @@ function drawPackingShipmentSection(doc, startY, qcChecklistValues) {
 function drawMainReportPages(doc, ticket, qcChecklistValues) {
   let y = drawTitle(doc, ticket)
   drawAqlResultBadge(doc, ticket, qcChecklistValues, y)
-  y = drawHeaderInfoTable(doc, ticket, y)
+  y = drawHeaderInfoTable(doc, ticket, y, qcChecklistValues)
   y = drawMaterialsSection(doc, y, qcChecklistValues)
   y = drawInspectionPointsSection(doc, y, ticket)
   y = drawNotesSection(doc, y, ticket)

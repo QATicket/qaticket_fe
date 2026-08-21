@@ -316,7 +316,7 @@ export function buildExportFilename(tickets, extension = 'xlsx') {
 }
 
 // Điền các ô header động (dòng 4-5) từ ticket đầu tiên - xem Header mapping.md.
-function writeHeaderValues(ws, ticket) {
+function writeHeaderValues(ws, ticket, qcChecklistValues) {
   if (!ticket) return
   ws.getCell('B4').value = ticket.customerName ?? ''
   ws.getCell('D4').value = ticket.poNumber ?? ''
@@ -324,6 +324,13 @@ function writeHeaderValues(ws, ticket) {
   ws.getCell('M4').value = formatDateOnly(ticket.createdAt)
   ws.getCell('B5').value = ticket.qtySize ?? ''
   ws.getCell('E5').value = ticket.samplingSize ?? ''
+  // Shipment date/MDA# không có trong ticket/BE (xem EXTRA_INFO_FIELDS trong
+  // qcChecklist.js) - QC tự nhập tay ở QcChecklistModal ngay lúc xuất, không bắt
+  // buộc. H5/J5 là 2 ô nền vàng DUY NHẤT trong file mẫu cho 2 field này (dò trực
+  // tiếp file .xlsx gốc) - Cutting/Sewing/Pressing/Packing Qty KHÔNG có ô nền vàng
+  // tương ứng nên chỉ điền được ở bản PDF "giống Excel" (xem pdfExportExcelStyle.js).
+  ws.getCell('H5').value = qcChecklistValues?.shipmentDate || ''
+  ws.getCell('J5').value = qcChecklistValues?.mda || ''
   ws.getCell('M5').value = ticket.staff?.name ?? ''
 }
 
@@ -876,7 +883,7 @@ export async function exportTicketsExcel(ticketIds, { onProgress, qcChecklistVal
 
   clearYellowHeaderFill(ws)
   removeGrossWeightConditionalFormatting(ws)
-  writeHeaderValues(ws, tickets[0])
+  writeHeaderValues(ws, tickets[0], qcChecklistValues)
   writeInspectionStageCell(ws, MAIN_REPORT_INSPECTION_STAGE_CELL, tickets[0])
   writeTitleCell(ws)
   writeAqlLevelCell(ws, tickets[0])

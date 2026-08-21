@@ -141,3 +141,24 @@ export function defaultQcChoiceValues() {
 // nghĩa khi ticket đang PASS (vẫn trong AQL) - xem QcChecklistModal.jsx.
 export const AQL_PENDING_FLAG_KEY = 'aqlPending'
 export const AQL_PENDING_REASON_KEY = 'aqlPendingReason'
+
+// Các field KHÔNG có trong ticket/BE (xem Header mapping.md - đánh dấu "MANUAL"),
+// QC tự nhập tay ngay lúc xuất báo cáo giống flow v/x MATERIALS ở trên, không bắt
+// buộc - để trống thì báo cáo hiện "—" như cũ. Chỉ Shipment date/MDA# có ô nền vàng
+// riêng trong file .xlsx mẫu thật (H5/J5) nên được ghi vào cả Excel thật lẫn PDF;
+// 4 field Qty còn lại không có ô nền vàng tương ứng trong mẫu nên chỉ hiện ở PDF
+// "giống Excel" (xem excelExport.js/pdfExportExcelStyle.js).
+export const EXTRA_INFO_FIELDS = [
+  { key: 'shipmentDate', label: 'Shipment date - Ngày xuất', type: 'date' },
+  { key: 'mda', label: 'MDA#', type: 'text' },
+  { key: 'cuttingQty', label: 'Cutting Qty - SL cắt', type: 'number' },
+  { key: 'sewingQty', label: 'Sewing Qty - SL may', type: 'number' },
+  { key: 'pressingQty', label: 'Pressing Qty - SL ủi, ép', type: 'number' },
+  { key: 'packingQty', label: 'Packing Qty - SL đóng gói', type: 'number' },
+]
+
+export function defaultExtraInfoValues() {
+  const values = {}
+  for (const field of EXTRA_INFO_FIELDS) values[field.key] = ''
+  return values
+}

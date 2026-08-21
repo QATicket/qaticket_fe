@@ -368,8 +368,8 @@ function drawNotesSection(doc, startY, ticket) {
       textColor: 20,
     },
     columnStyles: {
-      0: { fontStyle: 'bold', fillColor: [245, 245, 245], cellWidth: CONTENT_WIDTH * 0.2 },
-      1: { cellWidth: CONTENT_WIDTH * 0.8 },
+      0: { fontStyle: 'bold', fillColor: [255, 127, 127], cellWidth: CONTENT_WIDTH * 0.2 },
+      1: { fillColor: [255, 127, 127], cellWidth: CONTENT_WIDTH * 0.8 },
     },
   })
 
