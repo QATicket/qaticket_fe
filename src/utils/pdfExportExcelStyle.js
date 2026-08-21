@@ -231,7 +231,7 @@ function drawHeaderInfoTable(doc, ticket, startY) {
     ['Shipment date\nNgày xuất', '—', 'MDA#', '—'],
     ['Inspector\nNgười kiểm tra', ticket.staff?.name || '—', '', ''],
     ['Supplier', 'NHA BE', 'Location', 'VIET NAM'],
-    ['Fty Name', '—', '', ''],
+    ['Fty Name', ticket.factory?.name || '—', 'Line', ticket.line?.name || '—'],
     ['Cutting Qty\nSL cắt', '—', 'Sewing Qty\nSL may', '—'],
     ['Pressing Qty\nSL ủi, ép', '—', 'Packing Qty\nSL đóng gói', '—'],
   ]
